@@ -1,0 +1,62 @@
+version: 1
+settings:
+  health_check_interval: 30
+connections:
+  - name: web-server-01
+    host: 192.168.1.101
+    protocol: ssh
+    port: 22
+    description: "Web Server - Ubuntu 22.04"
+    ssh:
+      username: admin
+      private_key_path: ~/.ssh/id_rsa
+
+  - name: db-server-primary
+    host: 192.168.1.102
+    protocol: ssh
+    port: 22
+    description: "MySQL Primary Database"
+    ssh:
+      username: dbadmin
+      private_key_path: ~/.ssh/id_rsa
+
+  - name: win-admin-01
+    host: 192.168.1.200
+    protocol: rdp
+    port: 3389
+    description: "Windows Admin Desktop"
+    rdp:
+      username: administrator
+      domain: CORP
+
+  - name: vnc-workstation
+    host: 192.168.1.150
+    protocol: vnc
+    port: 5900
+    description: "Graphics Workstation"
+
+  - name: legacy-router
+    host: 192.168.0.1
+    protocol: telnet
+    port: 23
+    description: "Legacy Router Management"
+    telnet:
+      username: admin
+
+  - name: app-server-02
+    host: 192.168.1.103
+    protocol: ssh
+    port: 22
+    description: "App Server - CentOS 8"
+    ssh:
+      username: deploy
+
+  - name: k8s-app-pod
+    host: ""
+    protocol: k8s
+    port: 0
+    description: "Production App Pod"
+    k8s:
+      context: prod-cluster
+      namespace: default
+      command: /bin/sh
