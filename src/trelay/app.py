@@ -11,6 +11,7 @@ from textual.binding import Binding
 from textual.widgets import ContentSwitcher, DataTable
 
 from trelay.config import load_connections, save_connections, get_config_path
+from trelay.i18n import t
 from trelay.widgets.header_bar import HeaderBar
 from trelay.widgets.connection_table import ConnectionTable
 from trelay.widgets.terminal_view import TerminalView
@@ -197,7 +198,7 @@ class TrelayApp(App):
         header_bar = self.query_one(HeaderBar)
         if view == "list":
             switcher.current = "list-view"
-            status_bar.update_mode("列表模式")
+            status_bar.update_mode(t("mode_list"))
             status_bar.stop_timer()
             header_bar.set_list_mode()
             # Restore focus to DataTable
@@ -209,7 +210,7 @@ class TrelayApp(App):
                 pass
         elif view == "k8s":
             switcher.current = "k8s-view"
-            status_bar.update_mode("K8s 资源浏览")
+            status_bar.update_mode(t("mode_k8s"))
             status_bar.stop_timer()
             header_bar.set_k8s_mode()
             try:
@@ -219,7 +220,7 @@ class TrelayApp(App):
                 pass
         else:
             switcher.current = "terminal-container"
-            status_bar.update_mode("终端模式")
+            status_bar.update_mode(t("mode_terminal"))
 
     # ---- Key handling: mode dispatchers ----
 
@@ -436,7 +437,7 @@ class TrelayApp(App):
         status_bar.update_connection(conn.name, conn.protocol.value.upper(), conn.host, conn.port)
         status_bar.start_timer()
 
-        terminal.write_line("Connecting to {} ({})...".format(conn.name, conn.protocol.value.upper()))
+        terminal.write_line(t("connecting_to", name=conn.name, proto=conn.protocol.value.upper()))
 
         # Pass actual terminal dimensions to the protocol handler
         term_size = terminal.get_terminal_size()
@@ -454,12 +455,12 @@ class TrelayApp(App):
             # have settled to a different size while we were connecting)
             self.set_timer(0.3, self._sync_terminal_size)
         except Exception as exc:
-            terminal.write_line("Connection failed: {}".format(exc))
+            terminal.write_line(t("connection_failed", error=str(exc)))
 
         handler = self.session_manager.current_handler
         if handler is not None and not handler.is_interactive:
-            terminal.write_line("Connection launched via external client.")
-            terminal.write_line("Will return to list when session ends.")
+            terminal.write_line(t("connection_launched"))
+            terminal.write_line(t("will_return"))
 
     async def action_do_disconnect(self):
         # type: () -> None
@@ -467,7 +468,7 @@ class TrelayApp(App):
             return
         terminal = self.query_one(TerminalView)
         terminal.set_on_resize(None)
-        terminal.write_line("\nDisconnecting...")
+        terminal.write_line("\n" + t("disconnecting"))
         await self.session_manager.disconnect()
         self._return_to_list()
 
@@ -576,7 +577,7 @@ class TrelayApp(App):
             )
             status_bar.start_timer()
 
-            terminal.write_line("Exec into pod {}...".format(name))
+            terminal.write_line(t("exec_into_pod", name=name))
             term_size = terminal.get_terminal_size()
 
             try:
@@ -588,7 +589,7 @@ class TrelayApp(App):
                 )
                 self.set_timer(0.3, self._sync_terminal_size)
             except Exception as exc:
-                terminal.write_line("Exec failed: {}".format(exc))
+                terminal.write_line(t("exec_failed", error=str(exc)))
             return
 
         # Other resource types: no action on Enter
@@ -730,7 +731,7 @@ class TrelayApp(App):
         try:
             terminal = self.query_one(TerminalView)
             terminal.set_on_resize(None)
-            terminal.write_line("\n[Connection closed]")
+            terminal.write_line("\n" + t("connection_closed"))
         except Exception:
             pass
         if quick_failure:
@@ -740,7 +741,7 @@ class TrelayApp(App):
             # K8s exec ended normally — wait 5s or press any key to return
             try:
                 terminal = self.query_one(TerminalView)
-                terminal.write_line("[Press any key to return, or wait 5s...]")
+                terminal.write_line(t("press_any_key_return"))
             except Exception:
                 pass
             self.set_timer(5.0, self._auto_return_to_list)
@@ -793,9 +794,7 @@ class TrelayApp(App):
         terminal.set_on_resize(self._on_terminal_resize)
 
         pod_name = exec_conn.k8s_config.pod
-        terminal.write_line("Retrying exec into pod {} with {}...".format(
-            pod_name, shell_command
-        ))
+        terminal.write_line(t("retrying_exec", shell=shell_command, name=pod_name))
         term_size = terminal.get_terminal_size()
 
         try:
@@ -807,7 +806,7 @@ class TrelayApp(App):
             )
             self.set_timer(0.3, self._sync_terminal_size)
         except Exception as exc:
-            terminal.write_line("Exec failed: {}".format(exc))
+            terminal.write_line(t("exec_failed", error=str(exc)))
 
     def _auto_return_to_list(self):
         # type: () -> None

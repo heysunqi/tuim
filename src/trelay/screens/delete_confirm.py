@@ -5,6 +5,8 @@ from textual.containers import Center, Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Static
 
+from trelay.i18n import t
+
 
 class DeleteConfirmScreen(ModalScreen[bool]):
     """Modal screen asking the user to confirm deletion of a connection.
@@ -64,16 +66,15 @@ class DeleteConfirmScreen(ModalScreen[bool]):
     def compose(self):
         # type: () -> ComposeResult
         with Vertical():
-            yield Static("Delete Connection?", id="delete-title")
+            yield Static(t("title_delete"), id="delete-title")
             yield Static(
-                "Are you sure you want to delete '{name}'?\n"
-                "This action cannot be undone.".format(name=self.connection_name),
+                t("msg_delete_confirm", name=self.connection_name),
                 id="delete-message",
             )
             with Center():
                 with Horizontal(classes="button-row"):
-                    yield Button("Cancel", variant="default", id="cancel-btn")
-                    yield Button("Delete", variant="error", id="delete-btn")
+                    yield Button(t("btn_cancel"), variant="default", id="cancel-btn")
+                    yield Button(t("btn_delete"), variant="error", id="delete-btn")
 
     def on_button_pressed(self, event):
         # type: (Button.Pressed) -> None

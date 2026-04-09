@@ -7,6 +7,7 @@ from typing import Optional
 
 from trelay.models import Connection, ConnectionStatus
 from trelay.protocols.base import ProtocolHandler
+from trelay.i18n import t
 
 logger = logging.getLogger(__name__)
 
@@ -52,14 +53,14 @@ class VNCHandler(ProtocolHandler):
                         stderr=asyncio.subprocess.DEVNULL,
                     )
                 else:
-                    msg = "No VNC client found. Install vncviewer (e.g. tigervnc-viewer)."
+                    msg = t("vnc_no_client")
                     logger.error(msg)
                     self._emit_output(msg + "\r\n")
                     self._emit_disconnect()
                     return
 
             else:
-                msg = "Unsupported platform for VNC: {}".format(system)
+                msg = t("vnc_unsupported", system=system)
                 logger.error(msg)
                 self._emit_output(msg + "\r\n")
                 self._emit_disconnect()
@@ -67,10 +68,10 @@ class VNCHandler(ProtocolHandler):
 
             self.is_connected = True
             self._emit_output(
-                "Launched external VNC client for {}:{}\r\n".format(host, port)
+                t("vnc_launched", host=host, port=str(port))
             )
         except Exception as exc:
-            msg = "Failed to launch VNC client: {}".format(exc)
+            msg = t("vnc_launch_failed", error=str(exc))
             logger.error(msg)
             self._emit_output(msg + "\r\n")
             self._emit_disconnect()

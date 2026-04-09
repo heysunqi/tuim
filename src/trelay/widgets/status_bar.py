@@ -8,6 +8,8 @@ from textual.containers import Horizontal
 from textual.widget import Widget
 from textual.widgets import Static
 
+from trelay.i18n import t
+
 
 class StatusBar(Widget):
     """Bottom status bar showing connection info, duration, and mode."""
@@ -17,7 +19,7 @@ class StatusBar(Widget):
         super().__init__(id="status-bar", **kwargs)
         self._elapsed_seconds = 0
         self._timer = None  # type: Optional[object]
-        self._mode = "列表模式"
+        self._mode = t("mode_list")
 
     def compose(self):
         # type: () -> ComposeResult

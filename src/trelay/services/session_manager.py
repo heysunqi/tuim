@@ -2,6 +2,7 @@
 from typing import Callable, Optional
 
 from trelay.models import Connection, Protocol
+from trelay.i18n import t
 
 
 class SessionManager:
@@ -56,7 +57,7 @@ class SessionManager:
         }
         handler_cls = handlers.get(connection.protocol)
         if handler_cls is None:
-            raise ValueError("Unsupported protocol: {}".format(connection.protocol))
+            raise ValueError(t("err_unsupported_protocol", proto=str(connection.protocol)))
         return handler_cls(connection)
 
     async def connect(self, connection, on_output, on_disconnect, term_size=None):

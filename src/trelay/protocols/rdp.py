@@ -7,6 +7,7 @@ from typing import Optional
 
 from trelay.models import Connection, ConnectionStatus
 from trelay.protocols.base import ProtocolHandler
+from trelay.i18n import t
 
 logger = logging.getLogger(__name__)
 
@@ -70,14 +71,14 @@ class RDPHandler(ProtocolHandler):
                         stderr=asyncio.subprocess.DEVNULL,
                     )
                 else:
-                    msg = "No RDP client found. Install xfreerdp or rdesktop."
+                    msg = t("rdp_no_client")
                     logger.error(msg)
                     self._emit_output(msg + "\r\n")
                     self._emit_disconnect()
                     return
 
             else:
-                msg = "Unsupported platform for RDP: {}".format(system)
+                msg = t("rdp_unsupported", system=system)
                 logger.error(msg)
                 self._emit_output(msg + "\r\n")
                 self._emit_disconnect()
@@ -85,10 +86,10 @@ class RDPHandler(ProtocolHandler):
 
             self.is_connected = True
             self._emit_output(
-                "Launched external RDP client for {}:{}\r\n".format(host, port)
+                t("rdp_launched", host=host, port=str(port))
             )
         except Exception as exc:
-            msg = "Failed to launch RDP client: {}".format(exc)
+            msg = t("rdp_launch_failed", error=str(exc))
             logger.error(msg)
             self._emit_output(msg + "\r\n")
             self._emit_disconnect()

@@ -17,6 +17,7 @@ from trelay.models import (
     TelnetConfig,
     VNCConfig,
 )
+from trelay.i18n import t
 
 
 # Protocol choices for the Select widget
@@ -110,7 +111,7 @@ class AddConnectionScreen(ModalScreen[Optional[Connection]]):
 
     def compose(self):
         # type: () -> ComposeResult
-        title = "Edit Connection" if self._is_editing else "Add Connection"
+        title = t("title_edit_connection") if self._is_editing else t("title_add_connection")
         conn = self.editing_connection
 
         # Determine initial values
@@ -126,23 +127,23 @@ class AddConnectionScreen(ModalScreen[Optional[Connection]]):
             with VerticalScroll():
                 # Common fields
                 with Vertical(classes="form-group"):
-                    yield Label("Name *")
+                    yield Label(t("label_name"))
                     yield Input(
                         value=initial_name,
-                        placeholder="My Server",
+                        placeholder=t("placeholder_name"),
                         id="field-name",
                     )
 
                 with Vertical(classes="form-group"):
-                    yield Label("Host *")
+                    yield Label(t("label_host"))
                     yield Input(
                         value=initial_host,
-                        placeholder="192.168.1.100 or hostname",
+                        placeholder=t("placeholder_host"),
                         id="field-host",
                     )
 
                 with Vertical(classes="form-group"):
-                    yield Label("Protocol")
+                    yield Label(t("label_protocol"))
                     yield Select(
                         options=PROTOCOL_CHOICES,
                         value=initial_protocol,
@@ -150,7 +151,7 @@ class AddConnectionScreen(ModalScreen[Optional[Connection]]):
                     )
 
                 with Vertical(classes="form-group"):
-                    yield Label("Port")
+                    yield Label(t("label_port"))
                     yield Input(
                         value=initial_port,
                         placeholder="22",
@@ -158,32 +159,32 @@ class AddConnectionScreen(ModalScreen[Optional[Connection]]):
                     )
 
                 with Vertical(classes="form-group"):
-                    yield Label("Description")
+                    yield Label(t("label_description"))
                     yield Input(
                         value=initial_desc,
-                        placeholder="Optional description",
+                        placeholder=t("placeholder_description"),
                         id="field-description",
                     )
 
                 # --- SSH fields ---
                 with Vertical(id="ssh-fields", classes="protocol-fields"):
                     with Vertical(classes="form-group"):
-                        yield Label("Username")
+                        yield Label(t("label_username"))
                         yield Input(
                             value=self._get_ssh_val("username"),
                             placeholder="root",
                             id="field-ssh-username",
                         )
                     with Vertical(classes="form-group"):
-                        yield Label("Password")
+                        yield Label(t("label_password"))
                         yield Input(
                             value=self._get_ssh_val("password"),
-                            placeholder="(leave blank for key auth)",
+                            placeholder=t("placeholder_key_auth"),
                             password=True,
                             id="field-ssh-password",
                         )
                     with Vertical(classes="form-group"):
-                        yield Label("Private Key Path")
+                        yield Label(t("label_private_key"))
                         yield Input(
                             value=self._get_ssh_val("private_key_path"),
                             placeholder="~/.ssh/id_rsa",
@@ -193,22 +194,22 @@ class AddConnectionScreen(ModalScreen[Optional[Connection]]):
                 # --- RDP fields ---
                 with Vertical(id="rdp-fields", classes="protocol-fields hidden"):
                     with Vertical(classes="form-group"):
-                        yield Label("Username")
+                        yield Label(t("label_username"))
                         yield Input(
                             value=self._get_rdp_val("username"),
                             placeholder="Administrator",
                             id="field-rdp-username",
                         )
                     with Vertical(classes="form-group"):
-                        yield Label("Password")
+                        yield Label(t("label_password"))
                         yield Input(
                             value=self._get_rdp_val("password"),
-                            placeholder="Password",
+                            placeholder=t("label_password"),
                             password=True,
                             id="field-rdp-password",
                         )
                     with Vertical(classes="form-group"):
-                        yield Label("Domain")
+                        yield Label(t("label_domain"))
                         yield Input(
                             value=self._get_rdp_val("domain"),
                             placeholder="WORKGROUP",
@@ -218,10 +219,10 @@ class AddConnectionScreen(ModalScreen[Optional[Connection]]):
                 # --- VNC fields ---
                 with Vertical(id="vnc-fields", classes="protocol-fields hidden"):
                     with Vertical(classes="form-group"):
-                        yield Label("Password")
+                        yield Label(t("label_password"))
                         yield Input(
                             value=self._get_vnc_val("password"),
-                            placeholder="VNC password",
+                            placeholder=t("label_password"),
                             password=True,
                             id="field-vnc-password",
                         )
@@ -231,17 +232,17 @@ class AddConnectionScreen(ModalScreen[Optional[Connection]]):
                     id="telnet-fields", classes="protocol-fields hidden"
                 ):
                     with Vertical(classes="form-group"):
-                        yield Label("Username")
+                        yield Label(t("label_username"))
                         yield Input(
                             value=self._get_telnet_val("username"),
-                            placeholder="Username",
+                            placeholder=t("label_username"),
                             id="field-telnet-username",
                         )
                     with Vertical(classes="form-group"):
-                        yield Label("Password")
+                        yield Label(t("label_password"))
                         yield Input(
                             value=self._get_telnet_val("password"),
-                            placeholder="Password",
+                            placeholder=t("label_password"),
                             password=True,
                             id="field-telnet-password",
                         )
@@ -249,35 +250,35 @@ class AddConnectionScreen(ModalScreen[Optional[Connection]]):
                 # --- K8s fields ---
                 with Vertical(id="k8s-fields", classes="protocol-fields hidden"):
                     with Vertical(classes="form-group"):
-                        yield Label("Context")
+                        yield Label(t("label_context"))
                         yield Input(
                             value=self._get_k8s_val("context"),
-                            placeholder="kubectl context (blank = current)",
+                            placeholder=t("placeholder_context"),
                             id="field-k8s-context",
                         )
                     with Vertical(classes="form-group"):
-                        yield Label("Namespace")
+                        yield Label(t("label_namespace"))
                         yield Input(
                             value=self._get_k8s_val("namespace", "default"),
                             placeholder="default",
                             id="field-k8s-namespace",
                         )
                     with Vertical(classes="form-group"):
-                        yield Label("Pod")
+                        yield Label(t("label_pod"))
                         yield Input(
                             value=self._get_k8s_val("pod"),
                             placeholder="pod-name-xxxx",
                             id="field-k8s-pod",
                         )
                     with Vertical(classes="form-group"):
-                        yield Label("Container")
+                        yield Label(t("label_container"))
                         yield Input(
                             value=self._get_k8s_val("container"),
-                            placeholder="(optional, blank = default)",
+                            placeholder=t("placeholder_container"),
                             id="field-k8s-container",
                         )
                     with Vertical(classes="form-group"):
-                        yield Label("Command")
+                        yield Label(t("label_command"))
                         yield Input(
                             value=self._get_k8s_val("command", "/bin/sh"),
                             placeholder="/bin/sh",
@@ -287,8 +288,8 @@ class AddConnectionScreen(ModalScreen[Optional[Connection]]):
             # Buttons
             with Center():
                 with Horizontal(classes="button-row"):
-                    yield Button("Cancel", variant="default", id="cancel-btn")
-                    yield Button("Save", variant="primary", id="save-btn")
+                    yield Button(t("btn_cancel"), variant="default", id="cancel-btn")
+                    yield Button(t("btn_save"), variant="primary", id="save-btn")
 
     def on_mount(self):
         # type: () -> None
@@ -400,25 +401,23 @@ class AddConnectionScreen(ModalScreen[Optional[Connection]]):
 
         # Validate required fields
         if not name:
-            self.notify("Name is required.", severity="error")
+            self.notify(t("err_name_required"), severity="error")
             self.query_one("#field-name", Input).focus()
             return
 
         if protocol_value is None or protocol_value == Select.BLANK:
-            self.notify("Please select a protocol.", severity="error")
+            self.notify(t("err_select_protocol"), severity="error")
             return
 
         try:
             protocol = Protocol(protocol_value)
         except ValueError:
-            self.notify("Invalid protocol selected.", severity="error")
+            self.notify(t("err_invalid_protocol"), severity="error")
             return
 
         # Host is required for non-K8s protocols
         if protocol != Protocol.K8S and not host:
-            self.notify("Host is required for {} connections.".format(
-                protocol.value.upper()
-            ), severity="error")
+            self.notify(t("err_host_required", proto=protocol.value.upper()), severity="error")
             self.query_one("#field-host", Input).focus()
             return
 
@@ -426,7 +425,7 @@ class AddConnectionScreen(ModalScreen[Optional[Connection]]):
         try:
             port = int(port_str) if port_str else DEFAULT_PORTS.get(protocol, 0)
         except ValueError:
-            self.notify("Port must be a number.", severity="error")
+            self.notify(t("err_port_number"), severity="error")
             self.query_one("#field-port", Input).focus()
             return
 

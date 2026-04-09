@@ -9,6 +9,8 @@ from textual.containers import Center, Horizontal, Vertical, VerticalScroll
 from textual.screen import ModalScreen
 from textual.widgets import Button, Label, Select, Static
 
+from trelay.i18n import t
+
 
 # Result type: (context, namespace, pod, container)
 K8sSelection = Tuple[str, str, str, str]
@@ -146,63 +148,63 @@ class K8sPickerScreen(ModalScreen[Optional[K8sSelection]]):
     def compose(self):
         # type: () -> ComposeResult
         with Vertical():
-            yield Static("Kubernetes Resource Picker", id="picker-title")
+            yield Static(t("title_k8s_picker"), id="picker-title")
             yield Static("", id="picker-error")
-            yield Static("Loading...", id="picker-status")
+            yield Static(t("label_loading"), id="picker-status")
 
             with VerticalScroll():
                 # Context selector
                 with Vertical(classes="picker-group"):
-                    yield Label("Context")
+                    yield Label(t("label_context"))
                     yield Select(
                         options=[],
-                        prompt="Select a context...",
+                        prompt=t("prompt_select_context"),
                         id="select-context",
                     )
 
                 # Namespace selector
                 with Vertical(classes="picker-group"):
-                    yield Label("Namespace")
+                    yield Label(t("label_namespace"))
                     yield Select(
                         options=[],
-                        prompt="Select a namespace...",
+                        prompt=t("prompt_select_namespace"),
                         id="select-namespace",
                     )
 
                 # Pod selector
                 with Vertical(classes="picker-group"):
-                    yield Label("Pod")
+                    yield Label(t("label_pod"))
                     yield Select(
                         options=[],
-                        prompt="Select a pod...",
+                        prompt=t("prompt_select_pod"),
                         id="select-pod",
                     )
 
                 # Container selector (optional)
                 with Vertical(classes="picker-group"):
-                    yield Label("Container (optional)")
+                    yield Label(t("label_container_optional"))
                     yield Select(
                         options=[],
-                        prompt="Select a container...",
+                        prompt=t("prompt_select_container"),
                         id="select-container",
                     )
 
             # Buttons
             with Center():
                 with Horizontal(classes="button-row"):
-                    yield Button("Cancel", variant="default", id="cancel-btn")
-                    yield Button("Confirm", variant="primary", id="confirm-btn")
+                    yield Button(t("btn_cancel"), variant="default", id="cancel-btn")
+                    yield Button(t("btn_confirm"), variant="primary", id="confirm-btn")
 
     async def on_mount(self):
         # type: () -> None
         """Check for kubectl and load contexts on mount."""
         if shutil.which("kubectl") is None:
             self._kubectl_available = False
-            self._show_error("kubectl is not installed or not in PATH.")
+            self._show_error(t("err_kubectl_not_found"))
             self._set_status("")
             return
 
-        self._set_status("Fetching contexts...")
+        self._set_status(t("status_fetching_contexts"))
         await self._load_contexts()
 
     def _show_error(self, message):
@@ -240,7 +242,7 @@ class K8sPickerScreen(ModalScreen[Optional[K8sSelection]]):
         )
         if returncode != 0:
             self._show_error(
-                "Failed to get contexts: {}".format(stderr.strip() or "unknown error")
+                t("err_get_contexts", error=stderr.strip() or "unknown error")
             )
             self._set_status("")
             return
@@ -249,7 +251,7 @@ class K8sPickerScreen(ModalScreen[Optional[K8sSelection]]):
             line.strip() for line in stdout.strip().splitlines() if line.strip()
         ]
         if not self._contexts:
-            self._show_error("No kubectl contexts found.")
+            self._show_error(t("err_no_contexts"))
             self._set_status("")
             return
 
@@ -263,7 +265,7 @@ class K8sPickerScreen(ModalScreen[Optional[K8sSelection]]):
     async def _load_namespaces(self, context):
         # type: (str) -> None
         """Fetch namespaces for the given context."""
-        self._set_status("Fetching namespaces...")
+        self._set_status(t("status_fetching_namespaces"))
 
         cmd_args = ["get", "namespaces", "--no-headers", "-o", "custom-columns=:metadata.name"]
         if context:
@@ -272,9 +274,7 @@ class K8sPickerScreen(ModalScreen[Optional[K8sSelection]]):
         returncode, stdout, stderr = await _run_kubectl(*cmd_args)
         if returncode != 0:
             self._show_error(
-                "Failed to get namespaces: {}".format(
-                    stderr.strip() or "unknown error"
-                )
+                t("err_get_namespaces", error=stderr.strip() or "unknown error")
             )
             self._set_status("")
             return
@@ -296,7 +296,7 @@ class K8sPickerScreen(ModalScreen[Optional[K8sSelection]]):
     async def _load_pods(self, context, namespace):
         # type: (str, str) -> None
         """Fetch pods for the given context and namespace."""
-        self._set_status("Fetching pods...")
+        self._set_status(t("status_fetching_pods"))
 
         cmd_args = [
             "get", "pods", "-n", namespace,
@@ -308,7 +308,7 @@ class K8sPickerScreen(ModalScreen[Optional[K8sSelection]]):
         returncode, stdout, stderr = await _run_kubectl(*cmd_args)
         if returncode != 0:
             self._show_error(
-                "Failed to get pods: {}".format(stderr.strip() or "unknown error")
+                t("err_get_pods", error=stderr.strip() or "unknown error")
             )
             self._set_status("")
             return
@@ -317,7 +317,7 @@ class K8sPickerScreen(ModalScreen[Optional[K8sSelection]]):
             line.strip() for line in stdout.strip().splitlines() if line.strip()
         ]
         if not self._pods:
-            self._show_error("No pods found in namespace '{}'.".format(namespace))
+            self._show_error(t("err_no_pods", ns=namespace))
             self._set_status("")
             return
 
@@ -334,7 +334,7 @@ class K8sPickerScreen(ModalScreen[Optional[K8sSelection]]):
     async def _load_containers(self, context, namespace, pod):
         # type: (str, str, str) -> None
         """Fetch containers for the given pod."""
-        self._set_status("Fetching containers...")
+        self._set_status(t("status_fetching_containers"))
 
         cmd_args = [
             "get", "pod", pod, "-n", namespace,
@@ -346,9 +346,7 @@ class K8sPickerScreen(ModalScreen[Optional[K8sSelection]]):
         returncode, stdout, stderr = await _run_kubectl(*cmd_args)
         if returncode != 0:
             self._show_error(
-                "Failed to get containers: {}".format(
-                    stderr.strip() or "unknown error"
-                )
+                t("err_get_containers", error=stderr.strip() or "unknown error")
             )
             self._set_status("")
             return
@@ -425,13 +423,13 @@ class K8sPickerScreen(ModalScreen[Optional[K8sSelection]]):
         # type: () -> None
         """Validate selection and dismiss with the chosen resources."""
         if not self._selected_context:
-            self._show_error("Please select a context.")
+            self._show_error(t("err_select_context"))
             return
         if not self._selected_namespace:
-            self._show_error("Please select a namespace.")
+            self._show_error(t("err_select_namespace"))
             return
         if not self._selected_pod:
-            self._show_error("Please select a pod.")
+            self._show_error(t("err_select_pod"))
             return
 
         self.dismiss((

@@ -26,6 +26,8 @@ Screen {
 
 #header-bar #header-info {
     width: 1fr;
+    content-align: left middle;
+    height: 2;
 }
 
 #header-bar #header-shortcuts {

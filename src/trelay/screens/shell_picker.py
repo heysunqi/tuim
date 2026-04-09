@@ -7,6 +7,8 @@ from textual.containers import Center, Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Input, Static
 
+from trelay.i18n import t
+
 
 _COMMON_SHELLS = ["/bin/bash", "/bin/sh", "/bin/ash", "/bin/zsh"]
 
@@ -86,10 +88,9 @@ class ShellPickerScreen(ModalScreen[Optional[str]]):
     def compose(self):
         # type: () -> ComposeResult
         with Vertical():
-            yield Static("Shell Not Found", id="sp-title")
+            yield Static(t("title_shell_not_found"), id="sp-title")
             yield Static(
-                "The default shell failed to start.\n"
-                "Choose an alternative shell to try:",
+                t("msg_shell_failed"),
                 id="sp-message",
             )
             with Center():
@@ -101,13 +102,13 @@ class ShellPickerScreen(ModalScreen[Optional[str]]):
             with Center():
                 with Horizontal(classes="custom-row"):
                     yield Input(
-                        placeholder="Custom shell path...",
+                        placeholder=t("placeholder_custom_shell"),
                         id="custom-shell-input",
                     )
-                    yield Button("Try", variant="primary", id="try-custom-btn")
+                    yield Button(t("btn_try"), variant="primary", id="try-custom-btn")
             with Center():
                 with Horizontal(classes="cancel-row"):
-                    yield Button("Cancel", variant="default", id="cancel-btn")
+                    yield Button(t("btn_cancel"), variant="default", id="cancel-btn")
 
     def on_button_pressed(self, event):
         # type: (Button.Pressed) -> None

@@ -12,6 +12,7 @@ from typing import List, Optional
 
 from trelay.models import Connection, ConnectionStatus
 from trelay.protocols.base import ProtocolHandler
+from trelay.i18n import t
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +89,7 @@ class K8sHandler(ProtocolHandler):
         self._exit_status = None
         kubectl_path = shutil.which("kubectl")
         if kubectl_path is None:
-            msg = "kubectl not found in PATH"
+            msg = t("k8s_kubectl_not_found")
             logger.error(msg)
             self._emit_output(msg + "\r\n")
             self._emit_disconnect()
@@ -136,10 +137,10 @@ class K8sHandler(ProtocolHandler):
                     cfg.pod if cfg else "unknown",
                 )
                 self._emit_output(
-                    "Connected to pod {}\r\n".format(label)
+                    t("k8s_connected", label=label)
                 )
         except Exception as exc:
-            msg = "K8s exec failed: {}".format(exc)
+            msg = t("k8s_exec_failed", error=str(exc))
             logger.error(msg)
             self._emit_output(msg + "\r\n")
             self._emit_disconnect()

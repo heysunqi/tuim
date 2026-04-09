@@ -4,6 +4,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
+from trelay.i18n import t
+
 
 class Protocol(str, Enum):
     SSH = "ssh"
@@ -120,7 +122,7 @@ class Connection:
             if cfg.kubeconfig:
                 import os
                 return os.path.basename(cfg.kubeconfig)
-            return "(default)"
+            return t("k8s_default_context")
         return self.host
 
     def display_port(self):
@@ -136,18 +138,20 @@ class Connection:
     def display_last_connected(self):
         """Return a human-readable last connected string."""
         if self.last_connected is None:
-            return "Never"
+            return t("time_never")
         now = datetime.now()
         diff = now - self.last_connected
         seconds = int(diff.total_seconds())
         if seconds < 60:
-            return "Just now"
+            return t("time_just_now")
         elif seconds < 3600:
             minutes = seconds // 60
-            return "{} min ago".format(minutes)
+            return t("time_min_ago", n=str(minutes))
         elif seconds < 86400:
             hours = seconds // 3600
-            return "{} hr ago".format(hours)
+            return t("time_hr_ago", n=str(hours))
         else:
             days = seconds // 86400
-            return "{} day{} ago".format(days, "s" if days > 1 else "")
+            if days > 1:
+                return t("time_days_ago", n=str(days))
+            return t("time_day_ago", n=str(days))

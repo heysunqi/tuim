@@ -9,6 +9,7 @@ from textual.widgets import DataTable
 
 from trelay.models import Connection
 from trelay.widgets.protocol_badge import render_protocol_badge, render_status_indicator
+from trelay.i18n import t
 
 
 class ConnectionTable(Widget):
@@ -28,13 +29,13 @@ class ConnectionTable(Widget):
         # type: () -> None
         table = self.query_one(DataTable)
         table.add_columns(
-            "Status",
-            "Name",
-            "Host",
-            "Protocol",
-            "Port",
-            "Description",
-            "Last Connected",
+            t("col_status"),
+            t("col_name"),
+            t("col_host"),
+            t("col_protocol"),
+            t("col_port"),
+            t("col_description"),
+            t("col_last_connected"),
         )
 
     def refresh_data(self, connections):

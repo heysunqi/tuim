@@ -5,16 +5,18 @@ from textual.containers import Center, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Static
 
+from trelay.i18n import t
+
 
 SHORTCUTS = [
-    ("Up / Down  or  k / j", "Navigate connections"),
-    ("Enter", "Connect to selected"),
-    ("Esc", "Disconnect / Back to list"),
-    ("a", "Add new connection"),
-    ("e", "Edit selected connection"),
-    ("d", "Delete connection"),
-    ("?", "Show this help"),
-    ("q", "Quit application"),
+    ("Up / Down  or  k / j", "help_navigate"),
+    ("Enter", "help_connect"),
+    ("Esc", "help_disconnect"),
+    ("a", "help_add"),
+    ("e", "help_edit"),
+    ("d", "help_delete"),
+    ("?", "help_show_help"),
+    ("q", "help_quit"),
 ]
 
 
@@ -79,22 +81,22 @@ class HelpScreen(ModalScreen):
     def compose(self):
         # type: () -> ComposeResult
         with Vertical():
-            yield Static("Keyboard Shortcuts", id="help-title")
+            yield Static(t("title_help"), id="help-title")
             yield Static(
                 "----------------------------------------"
                 "--------------------",
                 id="help-divider",
             )
-            for key, desc in SHORTCUTS:
+            for key, desc_key in SHORTCUTS:
                 with Vertical(classes="shortcut-row"):
                     yield Static(
                         "  [bold cyan]{key}[/]  {desc}".format(
-                            key=key.ljust(24), desc=desc
+                            key=key.ljust(24), desc=t(desc_key)
                         )
                     )
             yield Static("")
             with Center():
-                yield Button("Close", variant="primary", id="close-btn")
+                yield Button(t("btn_close"), variant="primary", id="close-btn")
 
     def on_button_pressed(self, event):
         # type: (Button.Pressed) -> None

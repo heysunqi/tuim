@@ -15,6 +15,8 @@ from textual.app import ComposeResult
 from textual.widget import Widget
 from textual.widgets import Static
 
+from trelay.i18n import t
+
 # Map pyte named colors to k9s-theme hex values
 _COLOR_MAP = {
     "black": "#000000",
@@ -330,7 +332,7 @@ class TerminalView(Widget):
 
         # Show a scroll indicator
         if viewport_start < sb_len:
-            indicator = " [scrollback: -{} lines] ".format(self._scroll_offset)
+            indicator = " [{}] ".format(t("scrollback_indicator", n=str(self._scroll_offset)))
             text.append("\n")
             text.append(indicator, style="bold #d29922 on #21262d")
 

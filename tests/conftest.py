@@ -1,6 +1,7 @@
 """Shared test fixtures for Trelay."""
 import pytest
 
+from trelay.i18n import set_language
 from trelay.models import (
     Connection,
     ConnectionStatus,
@@ -11,6 +12,14 @@ from trelay.models import (
     TelnetConfig,
     VNCConfig,
 )
+
+
+@pytest.fixture(autouse=True)
+def _use_english_locale():
+    """Ensure all tests run with English locale for deterministic string assertions."""
+    set_language("en")
+    yield
+    set_language("en")
 
 
 @pytest.fixture

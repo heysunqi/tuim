@@ -7,6 +7,7 @@ import asyncssh
 
 from trelay.models import Connection, ConnectionStatus
 from trelay.protocols.base import ProtocolHandler
+from trelay.i18n import t
 
 logger = logging.getLogger(__name__)
 
@@ -58,10 +59,10 @@ class SSHHandler(ProtocolHandler):
             self.is_connected = True
             self._reader_task = asyncio.ensure_future(self._read_loop())
             self._emit_output(
-                "Connected to {}:{}\r\n".format(host, port)
+                t("ssh_connected", host=host, port=str(port))
             )
         except Exception as exc:
-            msg = "SSH connection failed ({}:{}): {}".format(host, port, exc)
+            msg = t("ssh_failed", host=host, port=str(port), error=str(exc))
             logger.error(msg)
             self._emit_output(msg + "\r\n")
             self._emit_disconnect()

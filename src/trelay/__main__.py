@@ -2,18 +2,20 @@
 import argparse
 import sys
 
+from trelay.i18n import t
+
 
 def main():
     """Main entry point for the Trelay TUI application."""
     parser = argparse.ArgumentParser(
         prog="trelay",
-        description="Trelay - TUI Remote Connection Manager",
+        description=t("app_description"),
     )
     parser.add_argument(
         "--config", "-c",
         type=str,
         default=None,
-        help="Path to connections YAML config file",
+        help=t("config_help"),
     )
     args = parser.parse_args()
 
