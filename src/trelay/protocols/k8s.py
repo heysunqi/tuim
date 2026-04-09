@@ -7,6 +7,7 @@ import pty
 import shutil
 import struct
 import termios
+import time
 from typing import List, Optional
 
 from trelay.models import Connection, ConnectionStatus
@@ -24,10 +25,20 @@ class K8sHandler(ProtocolHandler):
         self._master_fd = None  # type: Optional[int]
         self._reader_task = None  # type: Optional[asyncio.Task]
         self._term_size = (120, 40)  # (cols, rows)
+        self._connect_time = None  # type: Optional[float]
+        self._exit_status = None  # type: Optional[int]
 
     @property
     def is_interactive(self) -> bool:
         return True
+
+    @property
+    def was_quick_failure(self) -> bool:
+        """True if the subprocess exited quickly with a non-zero status."""
+        if self._connect_time is None or self._exit_status is None:
+            return False
+        elapsed = time.monotonic() - self._connect_time
+        return elapsed < 3.0 and self._exit_status != 0
 
     def set_term_size(self, cols, rows):
         # type: (int, int) -> None
@@ -73,6 +84,8 @@ class K8sHandler(ProtocolHandler):
             self._set_pty_size(self._master_fd, cols, rows)
 
     async def connect(self) -> None:
+        self._connect_time = time.monotonic()
+        self._exit_status = None
         kubectl_path = shutil.which("kubectl")
         if kubectl_path is None:
             msg = "kubectl not found in PATH"
@@ -113,10 +126,8 @@ class K8sHandler(ProtocolHandler):
                 self._pid = pid
                 self.is_connected = True
 
-                # Make master_fd non-blocking for asyncio
-                flags = fcntl.fcntl(master_fd, fcntl.F_GETFL)
-                fcntl.fcntl(master_fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
-
+                # Keep master_fd in blocking mode — reads happen in
+                # a thread executor, so blocking is correct here.
                 self._reader_task = asyncio.ensure_future(self._read_loop())
 
                 cfg = self.connection.k8s_config
@@ -147,6 +158,19 @@ class K8sHandler(ProtocolHandler):
         except Exception as exc:
             logger.debug("K8s read loop ended: %s", exc)
         finally:
+            # Try to collect exit status from the child process
+            if self._pid is not None:
+                try:
+                    pid_result, status = os.waitpid(self._pid, os.WNOHANG)
+                    if pid_result != 0:
+                        if os.WIFEXITED(status):
+                            self._exit_status = os.WEXITSTATUS(status)
+                        else:
+                            self._exit_status = -1
+                except ChildProcessError:
+                    pass
+                except Exception:
+                    pass
             self.is_connected = False
             self._emit_disconnect()
 

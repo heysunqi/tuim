@@ -13,7 +13,7 @@ Screen {
 
 #header-bar {
     dock: top;
-    height: 1;
+    height: 2;
     background: #161b22;
     color: #e6edf3;
     padding: 0 1;
@@ -21,7 +21,7 @@ Screen {
 
 #header-bar Horizontal {
     width: 1fr;
-    height: 1;
+    height: 2;
 }
 
 #header-bar #header-info {
@@ -30,6 +30,7 @@ Screen {
 
 #header-bar #header-shortcuts {
     width: auto;
+    text-align: right;
 }
 
 /* --- StatusBar (#status-bar) --- */

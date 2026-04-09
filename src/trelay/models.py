@@ -107,6 +107,32 @@ class Connection:
         }
         return mapping.get(self.protocol)
 
+    def display_host(self):
+        """Return a display-friendly host string.
+
+        For K8s connections: context name, kubeconfig basename, or '(default)'.
+        For other protocols: the raw host field.
+        """
+        if self.protocol == Protocol.K8S and self.k8s_config is not None:
+            cfg = self.k8s_config
+            if cfg.context:
+                return cfg.context
+            if cfg.kubeconfig:
+                import os
+                return os.path.basename(cfg.kubeconfig)
+            return "(default)"
+        return self.host
+
+    def display_port(self):
+        """Return a display-friendly port string.
+
+        For K8s connections: namespace or '-'.
+        For other protocols: the port number as a string.
+        """
+        if self.protocol == Protocol.K8S and self.k8s_config is not None:
+            return self.k8s_config.namespace or "-"
+        return str(self.port)
+
     def display_last_connected(self):
         """Return a human-readable last connected string."""
         if self.last_connected is None:

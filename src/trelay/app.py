@@ -71,6 +71,8 @@ class TrelayApp(App):
         self._current_view = "list"
         self._k8s_return = False
         self._k8s_connection = None  # type: Optional[object]
+        self._last_k8s_exec_conn = None  # type: Optional[object]
+        self._shell_retry_pending = False
 
         # Lazy imports to avoid circular deps
         from trelay.services.session_manager import SessionManager
@@ -219,113 +221,123 @@ class TrelayApp(App):
             switcher.current = "terminal-container"
             status_bar.update_mode("终端模式")
 
-    # ---- Key handling for terminal mode ----
+    # ---- Key handling: mode dispatchers ----
 
     def _key_to_terminal(self, event):
         """Map a Textual key event to terminal escape data. Returns None to skip."""
         key = event.key
         char = event.character
 
-        # Ctrl+D → send to terminal (EOF); SSH shell will exit on its own
-        # and trigger _on_session_disconnect automatically
-
-        # Escape → send ESC to terminal (needed for vim etc.)
         if key == "escape":
             return "\x1b"
 
-        # Ctrl+key combinations → control characters
         if key.startswith("ctrl+") and len(key) == 6:
             letter = key[-1]
             if 'a' <= letter <= 'z':
                 return chr(ord(letter) - ord('a') + 1)
 
-        # Known special keys
         if key in _KEY_MAP:
             return _KEY_MAP[key]
 
-        # Regular printable character
         if char and len(char) >= 1 and ord(char[0]) >= 32:
             return char
 
-        # Space
         if key == "space":
             return " "
 
         return None
 
     async def on_key(self, event):
-        """Handle global key events."""
-        # In terminal mode, forward keystrokes to SSH
+        """Route key events to the active mode handler."""
         if self._current_view == "terminal":
-            if not self.session_manager.is_connected:
-                # Session ended — any key returns immediately
-                if self._k8s_return:
-                    event.prevent_default()
-                    event.stop()
-                    self._auto_return_to_list()
-                return
-            data = self._key_to_terminal(event)
-            if data is not None:
+            await self._handle_key_terminal(event)
+        elif self._current_view == "k8s":
+            self._handle_key_k8s(event)
+        elif self._current_view == "list":
+            self._handle_key_list(event)
+
+    async def _handle_key_terminal(self, event):
+        """Terminal mode: forward all keystrokes to the remote session."""
+        if self._shell_retry_pending:
+            return
+        if not self.session_manager.is_connected:
+            if self._k8s_return:
                 event.prevent_default()
                 event.stop()
-                await self.session_manager.send_input(data)
+                self._auto_return_to_list()
+            return
+        # Shift+Up/Down or Shift+PageUp/PageDown → scroll terminal history
+        key = event.key
+        if key in ("shift+up", "shift+down", "shift+pageup", "shift+pagedown"):
+            event.prevent_default()
+            event.stop()
+            terminal = self.query_one(TerminalView)
+            if key == "shift+up":
+                terminal.scroll_up(1)
+            elif key == "shift+down":
+                terminal.scroll_down(1)
+            elif key == "shift+pageup":
+                terminal.scroll_up(terminal.get_terminal_size()[1])
+            else:
+                terminal.scroll_down(terminal.get_terminal_size()[1])
+            return
+        data = self._key_to_terminal(event)
+        if data is not None:
+            event.prevent_default()
+            event.stop()
+            await self.session_manager.send_input(data)
+
+    def _handle_key_k8s(self, event):
+        """K8s resource browser mode: command bar, search, and navigation."""
+        cmd_bar = self.query_one(CommandBar)
+        if cmd_bar.is_active:
+            return
+        key = event.key
+        char = event.character
+        if char in (":", "/"):
+            event.prevent_default()
+            event.stop()
+            cmd_bar.activate(char)
+            return
+        if char in ("j", "k") or key in ("up", "down"):
+            event.prevent_default()
+            event.stop()
+            try:
+                k8s_view = self.query_one(K8sResourceView)
+                dt = k8s_view.query_one("#k8s-data-table", DataTable)
+                if char == "j" or key == "down":
+                    dt.action_cursor_down()
+                else:
+                    dt.action_cursor_up()
+            except Exception:
+                pass
             return
 
-        # In K8s resource browser mode
-        if self._current_view == "k8s":
-            cmd_bar = self.query_one(CommandBar)
-            if cmd_bar.is_active:
-                return
-            key = event.key
-            char = event.character
-            if char in (":", "/"):
-                event.prevent_default()
-                event.stop()
-                cmd_bar.activate(char)
-                return
-            # j/k/up/down — cursor navigation
-            if char in ("j", "k") or key in ("up", "down"):
-                event.prevent_default()
-                event.stop()
-                try:
-                    k8s_view = self.query_one(K8sResourceView)
-                    dt = k8s_view.query_one("#k8s-data-table", DataTable)
-                    if char == "j" or key == "down":
-                        dt.action_cursor_down()
-                    else:
-                        dt.action_cursor_up()
-                except Exception:
-                    pass
-                return
-            # Let other keys (Enter, etc.) propagate to DataTable
+    def _handle_key_list(self, event):
+        """List mode: command bar, search, and vim-style navigation."""
+        cmd_bar = self.query_one(CommandBar)
+        if cmd_bar.is_active:
             return
-
-        # In list mode, intercept : / ? to activate command bar
-        if self._current_view == "list":
-            cmd_bar = self.query_one(CommandBar)
-            if cmd_bar.is_active:
-                return  # CommandBar handles its own keys
-            key = event.key
-            char = event.character
-            if char in (":", "/", "?"):
-                event.prevent_default()
-                event.stop()
-                cmd_bar.activate(char)
-                return
-            # j/k/up/down vim-style navigation
-            if char in ("j", "k") or key in ("up", "down"):
-                event.prevent_default()
-                event.stop()
-                try:
-                    table = self.query_one(ConnectionTable)
-                    dt = table.query_one(DataTable)
-                    if char == "j" or key == "down":
-                        dt.action_cursor_down()
-                    else:
-                        dt.action_cursor_up()
-                except Exception:
-                    pass
-                return
+        key = event.key
+        char = event.character
+        if char in (":", "/", "?"):
+            event.prevent_default()
+            event.stop()
+            cmd_bar.activate(char)
+            return
+        if char in ("j", "k") or key in ("up", "down"):
+            event.prevent_default()
+            event.stop()
+            try:
+                table = self.query_one(ConnectionTable)
+                dt = table.query_one(DataTable)
+                if char == "j" or key == "down":
+                    dt.action_cursor_down()
+                else:
+                    dt.action_cursor_up()
+            except Exception:
+                pass
+            return
 
     # ---- Actions ----
 
@@ -550,6 +562,7 @@ class TrelayApp(App):
             exec_conn.k8s_config.namespace = k8s_view.get_namespace()
 
             self._k8s_return = True
+            self._last_k8s_exec_conn = exec_conn
             terminal = self.query_one(TerminalView)
             terminal.clear_output()
             self._switch_to_view("terminal")
@@ -584,11 +597,11 @@ class TrelayApp(App):
         # type: () -> None
         self.exit()
 
-    # ---- Command bar events ----
+    # ---- Command bar: mode dispatchers ----
 
     def on_command_bar_submitted(self, event):
         # type: (CommandBar.Submitted) -> None
-        """Handle command bar submission."""
+        """Handle command bar submission — dispatch by mode."""
         cmd_bar = self.query_one(CommandBar)
         prefix = event.prefix
         value = event.value.strip()
@@ -596,41 +609,65 @@ class TrelayApp(App):
         if prefix == ":":
             cmd_bar.deactivate()
             if self._current_view == "k8s":
-                self.run_worker(self._execute_k8s_command(value), exclusive=False)
+                self._on_cmd_submit_k8s(value)
             else:
-                self._execute_command(value)
+                self._on_cmd_submit_list(value)
         elif prefix in ("/", "?"):
-            # Enter confirms the search and closes the bar
             cmd_bar.deactivate()
-            # Keep the filter active — table stays filtered
         self._restore_focus()
+
+    def _on_cmd_submit_k8s(self, value):
+        # type: (str) -> None
+        """Handle : command in K8s mode."""
+        self.run_worker(self._execute_k8s_command(value), exclusive=False)
+
+    def _on_cmd_submit_list(self, value):
+        # type: (str) -> None
+        """Handle : command in List mode."""
+        self._execute_command(value)
 
     def on_command_bar_changed(self, event):
         # type: (CommandBar.Changed) -> None
-        """Handle real-time search as user types."""
+        """Handle real-time search — dispatch by mode."""
         if event.prefix in ("/", "?"):
             if self._current_view == "k8s":
-                k8s_view = self.query_one(K8sResourceView)
-                k8s_view.set_filter(event.value)
+                self._on_cmd_search_k8s(event.value)
             else:
-                table = self.query_one(ConnectionTable)
-                table.set_filter(event.value)
+                self._on_cmd_search_list(event.value)
+
+    def _on_cmd_search_k8s(self, text):
+        # type: (str) -> None
+        k8s_view = self.query_one(K8sResourceView)
+        k8s_view.set_filter(text)
+
+    def _on_cmd_search_list(self, text):
+        # type: (str) -> None
+        table = self.query_one(ConnectionTable)
+        table.set_filter(text)
 
     def on_command_bar_cancelled(self, event):
         # type: (CommandBar.Cancelled) -> None
-        """Handle Escape / empty backspace — cancel command bar."""
+        """Handle command bar cancel — dispatch by mode."""
         if self._current_view == "k8s":
-            k8s_view = self.query_one(K8sResourceView)
-            k8s_view.clear_filter()
+            self._on_cmd_cancel_k8s()
         else:
-            table = self.query_one(ConnectionTable)
-            table.clear_filter()
+            self._on_cmd_cancel_list()
         self._restore_focus()
+
+    def _on_cmd_cancel_k8s(self):
+        # type: () -> None
+        k8s_view = self.query_one(K8sResourceView)
+        k8s_view.clear_filter()
+
+    def _on_cmd_cancel_list(self):
+        # type: () -> None
+        table = self.query_one(ConnectionTable)
+        table.clear_filter()
 
     def _execute_command(self, cmd):
         # type: (str) -> None
         """Execute a : command."""
-        if cmd in ("q", "quit"):
+        if cmd in ("q", "quit", "q!"):
             self.exit()
 
     def _restore_focus(self):
@@ -683,14 +720,24 @@ class TrelayApp(App):
 
     def _on_session_disconnect(self):
         # type: () -> None
+        handler = self.session_manager.current_handler
+        quick_failure = (
+            self._k8s_return
+            and handler is not None
+            and hasattr(handler, "was_quick_failure")
+            and handler.was_quick_failure
+        )
         try:
             terminal = self.query_one(TerminalView)
             terminal.set_on_resize(None)
             terminal.write_line("\n[Connection closed]")
         except Exception:
             pass
-        if self._k8s_return:
-            # K8s exec ended — wait 5s or press any key to return
+        if quick_failure:
+            # Shell likely doesn't exist — offer alternatives
+            self.call_later(self._prompt_shell_retry)
+        elif self._k8s_return:
+            # K8s exec ended normally — wait 5s or press any key to return
             try:
                 terminal = self.query_one(TerminalView)
                 terminal.write_line("[Press any key to return, or wait 5s...]")
@@ -701,8 +748,71 @@ class TrelayApp(App):
             # Normal connection — auto-return after 1s
             self.set_timer(1.0, self._auto_return_to_list)
 
+    def _prompt_shell_retry(self):
+        # type: () -> None
+        """Show ShellPickerScreen after a quick K8s exec failure."""
+        from trelay.screens.shell_picker import ShellPickerScreen
+
+        self._shell_retry_pending = True
+
+        def on_result(shell_cmd):
+            self._shell_retry_pending = False
+            if shell_cmd:
+                self.run_worker(
+                    self._retry_k8s_exec(shell_cmd), exclusive=False
+                )
+            else:
+                # User cancelled — return to K8s browser
+                self._auto_return_to_list()
+
+        self.push_screen(ShellPickerScreen(), on_result)
+
+    async def _retry_k8s_exec(self, shell_command):
+        # type: (str) -> None
+        """Retry K8s exec with a different shell command."""
+        import copy
+        from trelay.models import K8sConfig
+
+        conn = self._last_k8s_exec_conn
+        if conn is None:
+            self._auto_return_to_list()
+            return
+
+        # Disconnect existing session
+        await self.session_manager.disconnect()
+
+        exec_conn = copy.deepcopy(conn)
+        if exec_conn.k8s_config is None:
+            exec_conn.k8s_config = K8sConfig()
+        exec_conn.k8s_config.command = shell_command
+        self._last_k8s_exec_conn = exec_conn
+
+        terminal = self.query_one(TerminalView)
+        terminal.clear_output()
+
+        terminal.set_on_resize(self._on_terminal_resize)
+
+        pod_name = exec_conn.k8s_config.pod
+        terminal.write_line("Retrying exec into pod {} with {}...".format(
+            pod_name, shell_command
+        ))
+        term_size = terminal.get_terminal_size()
+
+        try:
+            await self.session_manager.connect(
+                exec_conn,
+                on_output=self._on_session_output,
+                on_disconnect=self._on_session_disconnect,
+                term_size=term_size,
+            )
+            self.set_timer(0.3, self._sync_terminal_size)
+        except Exception as exc:
+            terminal.write_line("Exec failed: {}".format(exc))
+
     def _auto_return_to_list(self):
         # type: () -> None
+        if self._shell_retry_pending:
+            return
         if self._current_view == "terminal":
             if self._k8s_return:
                 self._k8s_return = False

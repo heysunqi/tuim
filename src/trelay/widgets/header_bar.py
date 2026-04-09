@@ -11,11 +11,11 @@ class HeaderBar(Widget):
     """Top header bar with logo and keyboard shortcut hints."""
 
     _LIST_SHORTCUTS = (
-        "[#8b949e]"
+        "[dim #8b949e]"
         "\\[[#6e7681]\u2191\u2193[/]] 导航  "
         "\\[[#6e7681]Enter[/]] 连接  "
         "\\[[#6e7681]Ctrl+D[/]] 断开  "
-        "\\[[#6e7681]a[/]] 新增  "
+        "\\[[#6e7681]a[/]] 新增\n"
         "\\[[#6e7681]e[/]] 编辑  "
         "\\[[#6e7681]d[/]] 删除  "
         "\\[[#6e7681]/[/]] 搜索  "
@@ -24,11 +24,11 @@ class HeaderBar(Widget):
     )
 
     _K8S_SHORTCUTS = (
-        "[#8b949e]"
+        "[dim #8b949e]"
         "\\[[#6e7681]j/k[/]] 导航  "
         "\\[[#6e7681]Enter[/]] Exec  "
         "\\[[#6e7681]:pod[/]] Pods  "
-        "\\[[#6e7681]:svc[/]] 服务  "
+        "\\[[#6e7681]:svc[/]] 服务\n"
         "\\[[#6e7681]:deploy[/]] 部署  "
         "\\[[#6e7681]:ns[/]] 命名空间  "
         "\\[[#6e7681]:q[/]] 返回  "

@@ -61,12 +61,14 @@ class ConnectionTable(Widget):
         table.clear()
 
         for conn in self._all_connections:
+            display_host = conn.display_host()
+            display_port = conn.display_port()
             if self._filter_text:
                 haystack = " ".join([
                     conn.name,
-                    conn.host,
+                    display_host,
                     conn.protocol.value,
-                    str(conn.port),
+                    display_port,
                     conn.description,
                 ]).lower()
                 if self._filter_text not in haystack:
@@ -74,9 +76,9 @@ class ConnectionTable(Widget):
             table.add_row(
                 render_status_indicator(conn.status),
                 conn.name,
-                conn.host,
+                display_host,
                 render_protocol_badge(conn.protocol),
-                str(conn.port),
+                display_port,
                 conn.description,
                 conn.display_last_connected(),
                 key=conn.name,
