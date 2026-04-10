@@ -1,7 +1,10 @@
 # Dockerfile for building Trelay multi-architecture binaries
-FROM python:3.9-slim
+FROM python:3.14-slim
 
 WORKDIR /app
+
+# Use USTC mirror for faster apt downloads
+RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
