@@ -34,9 +34,38 @@ _ZH = {
     "pods": "Pods",
     "services": "服务",
     "deployments": "部署",
+    "daemonsets": "守护进程集",
+    "statefulsets": "有状态副本集",
     "namespaces": "命名空间",
     "back": "返回",
     "quit_force": "退出",
+    "describe": "Describe",
+    "k8s_edit": "编辑",
+    "logs": "日志",
+    "k8s_help": "帮助",
+    "refresh": "刷新",
+    # -- new resources --
+    "jobs": "任务",
+    "cronjobs": "定时任务",
+    "replicasets": "副本集",
+    "ingresses": "入口",
+    "endpoints": "端点",
+    "networkpolicies": "网络策略",
+    "configmaps": "配置映射",
+    "secrets": "密钥",
+    "persistentvolumes": "持久卷",
+    "persistentvolumeclaims": "持久卷声明",
+    "storageclasses": "存储类",
+    "nodes": "节点",
+    "events": "事件",
+    "resourcequotas": "资源配额",
+    "horizontalpodautoscalers": "自动扩缩",
+    "limitranges": "限制范围",
+    "poddisruptionbudgets": "中断预算",
+    # -- k8s help --
+    "title_k8s_help": "K8s 资源命令",
+    "k8s_help_hint": "按任意键关闭",
+    "switch_namespace": "切换命名空间",
     # -- mode --
     "mode_list": "列表模式",
     "mode_k8s": "K8s 资源浏览",
@@ -48,9 +77,12 @@ _ZH = {
     "will_return": "会话结束后将返回列表。",
     "disconnecting": "正在断开连接...",
     "connection_closed": "[连接已关闭]",
-    "press_any_key_return": "[按任意键返回，或等待5秒...]",
+    "press_any_key_return": "[按任意键或 Ctrl+C 返回...]",
     "exec_into_pod": "正在进入 Pod {name}...",
     "exec_failed": "Exec 失败: {error}",
+    "k8s_describing": "正在获取 {name} 的 YAML...",
+    "k8s_editing": "正在编辑 {name}...",
+    "k8s_tailing_logs": "正在查看 {name} 的日志...",
     "retrying_exec": "正在使用 {shell} 重试进入 Pod {name}...",
     # -- time --
     "time_never": "从未",
@@ -185,9 +217,38 @@ _EN = {
     "pods": "Pods",
     "services": "Services",
     "deployments": "Deploy",
+    "daemonsets": "DaemonSet",
+    "statefulsets": "StatefulSet",
     "namespaces": "Namespace",
     "back": "Back",
     "quit_force": "Quit",
+    "describe": "Describe",
+    "k8s_edit": "Edit",
+    "logs": "Logs",
+    "k8s_help": "Help",
+    "refresh": "Refresh",
+    # -- new resources --
+    "jobs": "Jobs",
+    "cronjobs": "CronJobs",
+    "replicasets": "ReplicaSets",
+    "ingresses": "Ingresses",
+    "endpoints": "Endpoints",
+    "networkpolicies": "NetworkPolicies",
+    "configmaps": "ConfigMaps",
+    "secrets": "Secrets",
+    "persistentvolumes": "PersistentVolumes",
+    "persistentvolumeclaims": "PersistentVolumeClaims",
+    "storageclasses": "StorageClasses",
+    "nodes": "Nodes",
+    "events": "Events",
+    "resourcequotas": "ResourceQuotas",
+    "horizontalpodautoscalers": "HPA",
+    "limitranges": "LimitRanges",
+    "poddisruptionbudgets": "PodDisruptionBudgets",
+    # -- k8s help --
+    "title_k8s_help": "K8s Resource Commands",
+    "k8s_help_hint": "Press any key to close",
+    "switch_namespace": "Switch namespace",
     # -- mode --
     "mode_list": "List Mode",
     "mode_k8s": "K8s Browser",
@@ -199,9 +260,12 @@ _EN = {
     "will_return": "Will return to list when session ends.",
     "disconnecting": "Disconnecting...",
     "connection_closed": "[Connection closed]",
-    "press_any_key_return": "[Press any key to return, or wait 5s...]",
+    "press_any_key_return": "[Press any key or Ctrl+C to return...]",
     "exec_into_pod": "Exec into pod {name}...",
     "exec_failed": "Exec failed: {error}",
+    "k8s_describing": "Fetching YAML for {name}...",
+    "k8s_editing": "Editing {name}...",
+    "k8s_tailing_logs": "Tailing logs for {name}...",
     "retrying_exec": "Retrying exec into pod {name} with {shell}...",
     # -- time --
     "time_never": "Never",
@@ -343,6 +407,15 @@ def t(key, **kwargs):
     """Translate a key to the current language, with optional format args."""
     table = _TRANSLATIONS.get(_lang, _ZH)
     text = table.get(key, key)
+    if kwargs:
+        text = text.format(**kwargs)
+    return text
+
+
+def t_en(key, **kwargs):
+    # type: (str, **str) -> str
+    """Translate a key to English (for K8s mode)."""
+    text = _EN.get(key, key)
     if kwargs:
         text = text.format(**kwargs)
     return text

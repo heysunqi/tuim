@@ -1,0 +1,11 @@
+# Core dependencies
+textual>=0.80.0
+pyyaml>=6.0
+asyncssh>=2.14.0
+telnetlib3>=2.0
+pyte>=0.8.0
+
+# Optional runtime dependencies
+aiohttp>=3.13
+aiohttp-jinja2>=1.6
+ Jinja2>=3.1

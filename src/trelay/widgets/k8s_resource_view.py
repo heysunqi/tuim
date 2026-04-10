@@ -1,4 +1,4 @@
-"""K8s resource browser widget for the Trelay TUI."""
+"""K8s resource browser widget for Trelay TUI."""
 from __future__ import annotations
 
 from typing import List, Optional
@@ -29,7 +29,7 @@ class K8sResourceView(Widget):
 
     def set_k8s_context(self, kubeconfig, context, namespace):
         # type: (str, str, str) -> None
-        """Set the cluster connection info."""
+        """Set up cluster connection info."""
         self._service = K8sService(
             kubeconfig=kubeconfig,
             context=context,
@@ -52,7 +52,7 @@ class K8sResourceView(Widget):
 
     async def load_resources(self, resource_type):
         # type: (str) -> None
-        """Load resources of the given type and refresh the table."""
+        """Load resources of given type and refresh table."""
         canonical = RESOURCE_ALIASES.get(resource_type, resource_type)
         self._current_resource_type = canonical
         self._filter_text = ""
@@ -88,7 +88,17 @@ class K8sResourceView(Widget):
 
     def clear_filter(self):
         # type: () -> None
+        """Clear the filter."""
         self._filter_text = ""
+        self._rebuild_table()
+
+    async def reload_resources(self):
+        # type: () -> None
+        """Reload resources from service, preserving filter."""
+        if self._service is None:
+            return
+        # Re-fetch data from service (filter_text is preserved)
+        self._headers, self._all_rows = await self._service.get_resources(self._current_resource_type)
         self._rebuild_table()
 
     def _update_header(self):
@@ -135,7 +145,7 @@ class K8sResourceView(Widget):
 
     def focus_table(self):
         # type: () -> None
-        """Focus the inner DataTable."""
+        """Focus on the inner DataTable."""
         try:
             table = self.query_one("#k8s-data-table", DataTable)
             table.focus()

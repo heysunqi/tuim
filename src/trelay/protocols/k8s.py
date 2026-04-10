@@ -28,6 +28,7 @@ class K8sHandler(ProtocolHandler):
         self._term_size = (120, 40)  # (cols, rows)
         self._connect_time = None  # type: Optional[float]
         self._exit_status = None  # type: Optional[int]
+        self._override_command = None  # type: Optional[List[str]]
 
     @property
     def is_interactive(self) -> bool:
@@ -44,6 +45,11 @@ class K8sHandler(ProtocolHandler):
     def set_term_size(self, cols, rows):
         # type: (int, int) -> None
         self._term_size = (cols, rows)
+
+    def set_override_command(self, cmd):
+        # type: (List[str]) -> None
+        """Set a custom command to run instead of kubectl exec."""
+        self._override_command = cmd
 
     def _build_exec_command(self) -> List[str]:
         """Build the kubectl exec command from connection config."""
@@ -96,7 +102,7 @@ class K8sHandler(ProtocolHandler):
             return
 
         try:
-            cmd = self._build_exec_command()
+            cmd = self._build_exec_command() if self._override_command is None else self._override_command
 
             # Create a PTY pair so kubectl sees a real terminal
             master_fd, slave_fd = pty.openpty()

@@ -109,13 +109,63 @@ class Connection:
         }
         return mapping.get(self.protocol)
 
+    def _resolve_k8s_server(self):
+        """Parse kubeconfig to extract API server host and port for this connection.
+
+        Returns (host, port) strings, or (None, None) on any failure.
+        """
+        cfg = self.k8s_config
+        if cfg is None:
+            return None, None
+        try:
+            import os
+            import yaml
+            from urllib.parse import urlparse
+
+            kubeconfig_path = cfg.kubeconfig or os.environ.get(
+                "KUBECONFIG", os.path.expanduser("~/.kube/config")
+            )
+            kubeconfig_path = os.path.expanduser(kubeconfig_path)
+            with open(kubeconfig_path, "r") as f:
+                kc = yaml.safe_load(f)
+            if not kc:
+                return None, None
+
+            # Determine which context to use
+            ctx_name = cfg.context or kc.get("current-context", "")
+            # Find the context entry
+            cluster_name = None
+            for ctx in kc.get("contexts") or []:
+                if ctx.get("name") == ctx_name:
+                    cluster_name = (ctx.get("context") or {}).get("cluster")
+                    break
+            if not cluster_name:
+                return None, None
+
+            # Find the cluster entry
+            for cl in kc.get("clusters") or []:
+                if cl.get("name") == cluster_name:
+                    server = (cl.get("cluster") or {}).get("server", "")
+                    if server:
+                        parsed = urlparse(server)
+                        host = parsed.hostname or ""
+                        port = str(parsed.port) if parsed.port else ""
+                        return host, port
+            return None, None
+        except Exception:
+            return None, None
+
     def display_host(self):
         """Return a display-friendly host string.
 
-        For K8s connections: context name, kubeconfig basename, or '(default)'.
+        For K8s connections: API server address from kubeconfig; falls back
+        to context name, kubeconfig basename, or '(default)'.
         For other protocols: the raw host field.
         """
         if self.protocol == Protocol.K8S and self.k8s_config is not None:
+            host, _ = self._resolve_k8s_server()
+            if host:
+                return host
             cfg = self.k8s_config
             if cfg.context:
                 return cfg.context
@@ -128,10 +178,14 @@ class Connection:
     def display_port(self):
         """Return a display-friendly port string.
 
-        For K8s connections: namespace or '-'.
+        For K8s connections: API server port from kubeconfig; falls back
+        to default namespace.
         For other protocols: the port number as a string.
         """
         if self.protocol == Protocol.K8S and self.k8s_config is not None:
+            _, port = self._resolve_k8s_server()
+            if port:
+                return port
             return self.k8s_config.namespace or "-"
         return str(self.port)
 

@@ -23,19 +23,24 @@ def _display_width(s):
     return w
 
 
-def _build_shortcuts(rows):
-    # type: (list) -> str
+def _build_shortcuts(rows, use_en=False):
+    # type: (list, bool) -> str
     """Render shortcut rows into a Rich markup string with column-aligned items.
 
     Each item is padded to a uniform column width so that items in the
     same column across different rows are aligned, even when CJK
     characters are present (which occupy 2 terminal columns).
+
+    use_en: if True, always use English translations (for K8s mode).
     """
+    # Import English translations when needed
+    from trelay.i18n import t, t_en
+
     # 1) Find the maximum visible width across all items
     max_w = 0
     for row in rows:
         for key, label_key in row:
-            label = t(label_key)
+            label = t_en(label_key) if use_en else t(label_key)
             # visible width: "[" + key + "] " + label
             w = 1 + len(key) + 2 + _display_width(label)
             if w > max_w:
@@ -47,7 +52,7 @@ def _build_shortcuts(rows):
     for row in rows:
         parts = []
         for key, label_key in row:
-            label = t(label_key)
+            label = t_en(label_key) if use_en else t(label_key)
             visible_w = 1 + len(key) + 2 + _display_width(label)
             pad = " " * max(0, col_w - visible_w)
             parts.append("\\[[#6e7681]{}[/]] {}{}".format(key, label, pad))
@@ -64,8 +69,8 @@ class HeaderBar(Widget):
     ]
 
     _K8S_ROWS = [
-        [("j/k", "nav"), ("Enter", "exec"), (":pod", "pods"), (":svc", "services")],
-        [(":deploy", "deployments"), (":ns", "namespaces"), (":q", "back"), (":q!", "quit_force")],
+        [("j/k", "nav"), ("Enter", "exec"), (":pod", "pods"), ("r", "refresh")],
+        [("d", "describe"), ("e", "k8s_edit"), ("l", "logs"), (":q", "back")],
     ]
 
     def __init__(self, **kwargs):
@@ -90,7 +95,7 @@ class HeaderBar(Widget):
         # type: () -> None
         try:
             shortcuts = self.query_one("#header-shortcuts", Static)
-            shortcuts.update(_build_shortcuts(self._K8S_ROWS))
+            shortcuts.update(_build_shortcuts(self._K8S_ROWS, use_en=True))
         except Exception:
             pass
 
@@ -98,6 +103,6 @@ class HeaderBar(Widget):
         # type: () -> None
         try:
             shortcuts = self.query_one("#header-shortcuts", Static)
-            shortcuts.update(_build_shortcuts(self._LIST_ROWS))
+            shortcuts.update(_build_shortcuts(self._LIST_ROWS, use_en=False))
         except Exception:
             pass

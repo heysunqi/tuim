@@ -11,7 +11,7 @@ from textual.binding import Binding
 from textual.widgets import ContentSwitcher, DataTable
 
 from trelay.config import load_connections, save_connections, get_config_path
-from trelay.i18n import t
+from trelay.i18n import t, t_en
 from trelay.widgets.header_bar import HeaderBar
 from trelay.widgets.connection_table import ConnectionTable
 from trelay.widgets.terminal_view import TerminalView
@@ -74,6 +74,7 @@ class TrelayApp(App):
         self._k8s_connection = None  # type: Optional[object]
         self._last_k8s_exec_conn = None  # type: Optional[object]
         self._shell_retry_pending = False
+        self._k8s_on_disconnect = None  # type: Optional[str]  # None/"stay"/"return"
 
         # Lazy imports to avoid circular deps
         from trelay.services.session_manager import SessionManager
@@ -131,7 +132,7 @@ class TrelayApp(App):
             os.makedirs(os.path.dirname(path), exist_ok=True)
             example = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
-                "..", "..", "config", "connections.example.yaml"
+                "assets", "example_connections.yaml"
             )
             if os.path.exists(example):
                 shutil.copy2(example, path)
@@ -210,7 +211,7 @@ class TrelayApp(App):
                 pass
         elif view == "k8s":
             switcher.current = "k8s-view"
-            status_bar.update_mode(t("mode_k8s"))
+            status_bar.update_mode(t_en("mode_k8s"))
             status_bar.stop_timer()
             header_bar.set_k8s_mode()
             try:
@@ -262,7 +263,20 @@ class TrelayApp(App):
         if self._shell_retry_pending:
             return
         if not self.session_manager.is_connected:
+            # Disconnected - check if we should return on this key
             if self._k8s_return:
+                if self._k8s_on_disconnect == "stay":
+                    # View mode (describe) — Ctrl+C to return, others allow scrolling
+                    if event.key == "ctrl+c":
+                        event.prevent_default()
+                        event.stop()
+                        self._auto_return_to_list()
+                    return
+                # Other K8s modes - any key returns
+            # Normal connection - any key returns
+            # But allow scroll keys to work first
+            key = event.key
+            if key not in ("shift+up", "shift+down", "shift+pageup", "shift+pagedown"):
                 event.prevent_default()
                 event.stop()
                 self._auto_return_to_list()
@@ -312,6 +326,26 @@ class TrelayApp(App):
                     dt.action_cursor_up()
             except Exception:
                 pass
+            return
+        if char == "d":
+            event.prevent_default()
+            event.stop()
+            self.run_worker(self._k8s_describe(), exclusive=False)
+            return
+        if char == "e":
+            event.prevent_default()
+            event.stop()
+            self.run_worker(self._k8s_edit(), exclusive=False)
+            return
+        if char == "l":
+            event.prevent_default()
+            event.stop()
+            self.run_worker(self._k8s_logs(), exclusive=False)
+            return
+        if char == "r":
+            event.prevent_default()
+            event.stop()
+            self.run_worker(self._k8s_refresh(), exclusive=False)
             return
 
     def _handle_key_list(self, event):
@@ -504,6 +538,12 @@ class TrelayApp(App):
         # type: (str) -> None
         """Execute a : command in K8s resource browser mode."""
         from trelay.services.k8s_service import RESOURCE_ALIASES
+
+        # Show help screen
+        if cmd == "?" or cmd == "help":
+            from trelay.screens.k8s_help_screen import K8sHelpScreen
+            self.push_screen(K8sHelpScreen())
+            return
 
         if cmd == "q" or cmd == "quit":
             self._k8s_connection = None
@@ -738,16 +778,26 @@ class TrelayApp(App):
             # Shell likely doesn't exist — offer alternatives
             self.call_later(self._prompt_shell_retry)
         elif self._k8s_return:
-            # K8s exec ended normally — wait 5s or press any key to return
+            if self._k8s_on_disconnect == "stay":
+                # View mode (describe) — stay on terminal, Ctrl+C to return
+                pass
+            elif self._k8s_on_disconnect == "return":
+                # Edit mode — return immediately after vim exits
+                self.call_later(self._auto_return_to_list)
+            else:
+                # K8s exec ended — wait for any key to return
+                try:
+                    terminal = self.query_one(TerminalView)
+                    terminal.write_line(t("press_any_key_return"))
+                except Exception:
+                    pass
+        else:
+            # Normal connection — wait for any key to return
             try:
                 terminal = self.query_one(TerminalView)
                 terminal.write_line(t("press_any_key_return"))
             except Exception:
                 pass
-            self.set_timer(5.0, self._auto_return_to_list)
-        else:
-            # Normal connection — auto-return after 1s
-            self.set_timer(1.0, self._auto_return_to_list)
 
     def _prompt_shell_retry(self):
         # type: () -> None
@@ -813,6 +863,7 @@ class TrelayApp(App):
         if self._shell_retry_pending:
             return
         if self._current_view == "terminal":
+            self._k8s_on_disconnect = None
             if self._k8s_return:
                 self._k8s_return = False
                 status_bar = self.query_one(StatusBar)
@@ -821,6 +872,125 @@ class TrelayApp(App):
                 self._switch_to_view("k8s")
             else:
                 self._return_to_list()
+
+    # ---- K8s shortcut commands (d/e/l) ----
+
+    async def _k8s_run_command(self, kubectl_args, status_label, message, on_disconnect=None):
+        # type: (list, str, str, str) -> None
+        """Run an arbitrary kubectl command in the terminal (triggered from K8s browser).
+
+        kubectl_args: sub-command arguments appended after base kubectl flags.
+        status_label: label shown in the status bar.
+        message: message printed in the terminal before the command runs.
+        on_disconnect: disconnect behavior — None (prompt+5s), "stay" (Ctrl+C),
+                       "return" (immediate).
+        """
+        conn = self._k8s_connection
+        if conn is None:
+            return
+
+        import copy
+        import os as _os
+        from trelay.models import K8sConfig
+
+        exec_conn = copy.deepcopy(conn)
+        if exec_conn.k8s_config is None:
+            exec_conn.k8s_config = K8sConfig()
+
+        k8s_view = self.query_one(K8sResourceView)
+        exec_conn.k8s_config.namespace = k8s_view.get_namespace()
+
+        self._k8s_return = True
+        self._k8s_on_disconnect = on_disconnect
+        self._last_k8s_exec_conn = exec_conn
+
+        terminal = self.query_one(TerminalView)
+        terminal.clear_output()
+        self._switch_to_view("terminal")
+        terminal.set_on_resize(self._on_terminal_resize)
+
+        status_bar = self.query_one(StatusBar)
+        status_bar.update_connection(status_label, "K8S", "", 0)
+        status_bar.start_timer()
+
+        terminal.write_line(message)
+        term_size = terminal.get_terminal_size()
+
+        # Build full kubectl command
+        cfg = exec_conn.k8s_config
+        base_cmd = ["kubectl"]
+        if cfg.kubeconfig:
+            base_cmd.extend(["--kubeconfig", _os.path.expanduser(cfg.kubeconfig)])
+        if cfg.context:
+            base_cmd.extend(["--context", cfg.context])
+        if cfg.namespace:
+            base_cmd.extend(["-n", cfg.namespace])
+        full_cmd = base_cmd + kubectl_args
+
+        try:
+            await self.session_manager.connect(
+                exec_conn,
+                on_output=self._on_session_output,
+                on_disconnect=self._on_session_disconnect,
+                term_size=term_size,
+                override_command=full_cmd,
+            )
+            self.set_timer(0.3, self._sync_terminal_size)
+        except Exception as exc:
+            terminal.write_line(t("exec_failed", error=str(exc)))
+
+    async def _k8s_describe(self):
+        # type: () -> None
+        """d key: kubectl get <type> <name> -o yaml"""
+        k8s_view = self.query_one(K8sResourceView)
+        resource_type = k8s_view.get_current_resource_type()
+        name = k8s_view.get_selected_resource_name()
+        if not name:
+            return
+        ns = k8s_view.get_namespace()
+        await self._k8s_run_command(
+            ["get", resource_type, name, "-o", "yaml"],
+            "{}:{}".format(ns, name),
+            t("k8s_describing", name=name),
+            on_disconnect="stay",
+        )
+
+    async def _k8s_edit(self):
+        # type: () -> None
+        """e key: kubectl edit <type> <name>"""
+        k8s_view = self.query_one(K8sResourceView)
+        resource_type = k8s_view.get_current_resource_type()
+        name = k8s_view.get_selected_resource_name()
+        if not name:
+            return
+        ns = k8s_view.get_namespace()
+        await self._k8s_run_command(
+            ["edit", resource_type, name],
+            "{}:{}".format(ns, name),
+            t("k8s_editing", name=name),
+            on_disconnect="return",
+        )
+
+    async def _k8s_logs(self):
+        # type: () -> None
+        """l key: kubectl logs -f <pod> (pods only)"""
+        k8s_view = self.query_one(K8sResourceView)
+        resource_type = k8s_view.get_current_resource_type()
+        name = k8s_view.get_selected_resource_name()
+        if not name or resource_type != "pods":
+            return
+        ns = k8s_view.get_namespace()
+        await self._k8s_run_command(
+            ["logs", "-f", name],
+            "{}:{}".format(ns, name),
+            t("k8s_tailing_logs", name=name),
+        )
+
+    async def _k8s_refresh(self):
+        # type: () -> None
+        """r key: refresh K8s resource list."""
+        k8s_view = self.query_one(K8sResourceView)
+        k8s_view.reload_resources()
 
     # ---- Table events ----
 
