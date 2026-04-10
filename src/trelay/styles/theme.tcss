@@ -13,7 +13,8 @@ Screen {
 
 #header-bar {
     dock: top;
-    height: 2;
+    height: auto;
+    min-height: 2;
     background: #161b22;
     color: #e6edf3;
     padding: 0 1;
@@ -21,13 +22,13 @@ Screen {
 
 #header-bar Horizontal {
     width: 1fr;
-    height: 2;
+    height: auto;
 }
 
 #header-bar #header-info {
     width: 1fr;
     content-align: left middle;
-    height: 2;
+    height: auto;
 }
 
 #header-bar #header-shortcuts {

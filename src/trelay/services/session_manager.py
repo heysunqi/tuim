@@ -60,8 +60,8 @@ class SessionManager:
             raise ValueError(t("err_unsupported_protocol", proto=str(connection.protocol)))
         return handler_cls(connection)
 
-    async def connect(self, connection, on_output, on_disconnect, term_size=None):
-        # type: (Connection, Callable, Callable, object) -> object
+    async def connect(self, connection, on_output, on_disconnect, term_size=None, override_command=None):
+        # type: (Connection, Callable, Callable, object, object) -> object
         """Connect to a remote host using the appropriate protocol handler.
 
         If already connected, disconnects the current session first.
@@ -73,6 +73,8 @@ class SessionManager:
             on_disconnect: Callback invoked when the session ends
                 unexpectedly.
             term_size: Optional (cols, rows) tuple for terminal dimensions.
+            override_command: Optional list of strings to override the default
+                command (e.g. for kubectl get/edit/logs).
 
         Returns:
             The ProtocolHandler instance that is now connected.
@@ -87,6 +89,8 @@ class SessionManager:
         # Pass terminal size to handlers that support it
         if term_size is not None and hasattr(self._handler, 'set_term_size'):
             self._handler.set_term_size(*term_size)
+        if override_command is not None and hasattr(self._handler, 'set_override_command'):
+            self._handler.set_override_command(override_command)
         await self._handler.connect()
         return self._handler
 
