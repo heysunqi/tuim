@@ -2,7 +2,7 @@
 name = "trelay"
 version = "0.0.1-beta"
 description = "TUI Remote Connection Manager - k9s-style terminal UI for SSH, RDP, VNC, Telnet and K8s"
-requires-python = ">=3.9"
+requires-python = ">=3.14"
 dependencies = [
     "textual>=0.80.0",
     "pyyaml>=6.0",
