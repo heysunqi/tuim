@@ -39,8 +39,8 @@ detect_runtime() {
 # Build for a specific architecture
 build_arch() {
     local arch="$1"
-    local img_name="trelay-build-${arch}:latest"
-    local container_name="trelay-extract-${arch}"
+    local img_name="tuim-build-${arch}:latest"
+    local container_name="tuim-extract-${arch}"
 
     echo "--- Building linux-${arch} ---"
 
@@ -53,7 +53,7 @@ build_arch() {
             .
         # Extract and rename
         mkdir -p dist
-        cp "dist-linux-${arch}/app/dist/trelay" "dist/trelay-v${VERSION}-linux-${arch}"
+        cp "dist-linux-${arch}/app/dist/tuim" "dist/tuim-v${VERSION}-linux-${arch}"
         rm -rf "dist-linux-${arch}"
     else
         # Podman (no --output support in remote mode)
@@ -69,7 +69,7 @@ build_arch() {
 
         # Copy binary from container
         mkdir -p dist
-        ${RUNTIME} cp "${container_name}:/app/dist/trelay" "dist/trelay-v${VERSION}-linux-${arch}"
+        ${RUNTIME} cp "${container_name}:/app/dist/tuim" "dist/tuim-v${VERSION}-linux-${arch}"
 
         # Cleanup
         ${RUNTIME} rm "${container_name}" >/dev/null 2>&1 || true
@@ -80,7 +80,7 @@ build_arch() {
 # Initialize runtime
 detect_runtime
 
-echo "=== Trelay Multi-Arch Build using ${RUNTIME} ==="
+echo "=== Tuim Multi-Arch Build using ${RUNTIME} ==="
 
 mkdir -p dist
 
@@ -92,4 +92,4 @@ build_arch arm64
 
 echo ""
 echo "=== Build Complete ==="
-ls -lh dist/trelay-v*
+ls -lh dist/tuim-v*

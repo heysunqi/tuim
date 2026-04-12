@@ -4,8 +4,8 @@ import tempfile
 
 import yaml
 
-from trelay.config import load_connections, save_connections
-from trelay.models import Connection, Protocol, SSHConfig
+from tuim.config import load_connections, save_connections
+from tuim.models import Connection, K8sConfig, Protocol, SSHConfig
 
 
 def test_load_nonexistent_file():
@@ -64,6 +64,54 @@ def test_save_empty_connections():
         save_connections([], config_path=path)
         loaded_conns, _ = load_connections(path)
         assert loaded_conns == []
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+
+
+def test_save_and_load_k8s_token_roundtrip():
+    """K8s connection with token auth should survive save/load round-trip."""
+    with tempfile.NamedTemporaryFile(suffix=".yaml", delete=False, mode="w") as f:
+        path = f.name
+
+    try:
+        connections = [
+            Connection(
+                name="k8s-token-test",
+                host="10.0.0.100",
+                protocol=Protocol.K8S,
+                port=6443,
+                description="Token auth cluster",
+                k8s_config=K8sConfig(
+                    token="my-secret-token",
+                    insecure_skip_tls_verify=True,
+                    namespace="kube-system",
+                    command="/bin/bash",
+                ),
+            ),
+        ]
+
+        save_connections(connections, config_path=path)
+
+        # Verify raw YAML
+        with open(path, "r") as f:
+            raw = yaml.safe_load(f)
+        k8s_data = raw["connections"][0]["k8s"]
+        assert k8s_data["token"] == "my-secret-token"
+        assert k8s_data["insecure_skip_tls_verify"] is True
+
+        # Load back
+        loaded_conns, _ = load_connections(path)
+        assert len(loaded_conns) == 1
+        conn = loaded_conns[0]
+        assert conn.name == "k8s-token-test"
+        assert conn.host == "10.0.0.100"
+        assert conn.port == 6443
+        assert conn.protocol == Protocol.K8S
+        assert conn.k8s_config is not None
+        assert conn.k8s_config.token == "my-secret-token"
+        assert conn.k8s_config.insecure_skip_tls_verify is True
+        assert conn.k8s_config.namespace == "kube-system"
     finally:
         if os.path.exists(path):
             os.unlink(path)

@@ -3,8 +3,8 @@ import asyncio
 
 import pytest
 
-from trelay.models import Connection, ConnectionStatus, Protocol
-from trelay.protocols.base import ProtocolHandler
+from tuim.models import Connection, ConnectionStatus, Protocol
+from tuim.protocols.base import ProtocolHandler
 
 
 class DummyHandler(ProtocolHandler):

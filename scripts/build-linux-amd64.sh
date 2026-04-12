@@ -17,7 +17,7 @@ if ! docker info &> /dev/null; then
     exit 1
 fi
 
-echo "=== Trelay Linux AMD64 Build ==="
+echo "=== Tuim Linux AMD64 Build ==="
 echo ""
 
 # Build for Linux amd64 using docker buildx
@@ -31,11 +31,11 @@ docker buildx build \
 
 # Extract and rename
 mkdir -p dist
-cp dist-linux-amd64/app/dist/trelay "dist/trelay-v${VERSION}-linux-amd64"
+cp dist-linux-amd64/app/dist/tuim "dist/tuim-v${VERSION}-linux-amd64"
 rm -rf dist-linux-amd64
 
 echo ""
 echo "=== Build Complete ==="
-ls -lh dist/trelay-v${VERSION}-linux-amd64
+ls -lh dist/tuim-v${VERSION}-linux-amd64
 echo ""
-echo "Binary location: dist/trelay-v${VERSION}-linux-amd64"
+echo "Binary location: dist/tuim-v${VERSION}-linux-amd64"

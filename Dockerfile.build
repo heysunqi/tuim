@@ -1,4 +1,4 @@
-# Dockerfile for building Trelay multi-architecture binaries
+# Dockerfile for building Tuim multi-architecture binaries
 FROM python:3.14-slim
 
 WORKDIR /app
@@ -15,13 +15,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy project files
 COPY pyproject.toml ./
 COPY src/ ./src/
-COPY trelay.spec ./
+COPY tuim.spec ./
 
 # Install Python dependencies and PyInstaller
 RUN pip install --no-cache-dir -e ".[dev]" pyinstaller
 
 # Build
-RUN pyinstaller trelay.spec --noconfirm --clean
+RUN pyinstaller tuim.spec --noconfirm --clean
 
-# Output binary is at /app/dist/trelay
+# Output binary is at /app/dist/tuim
 CMD ["ls", "-lh", "/app/dist"]

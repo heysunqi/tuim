@@ -1,8 +1,8 @@
-"""Shared test fixtures for Trelay."""
+"""Shared test fixtures for Tuim."""
 import pytest
 
-from trelay.i18n import set_language
-from trelay.models import (
+from tuim.i18n import set_language
+from tuim.models import (
     Connection,
     ConnectionStatus,
     K8sConfig,

@@ -1,0 +1,339 @@
+/* =============================================================================
+ * Tuim - K9s-style dark theme
+ * ============================================================================= */
+
+/* --- Global --- */
+
+Screen {
+    background: #0d1117;
+    color: #e6edf3;
+}
+
+/* --- HeaderBar (#header-bar) --- */
+
+#header-bar {
+    dock: top;
+    height: auto;
+    min-height: 2;
+    background: #161b22;
+    color: #e6edf3;
+    padding: 0 1;
+}
+
+#header-bar Horizontal {
+    width: 1fr;
+    height: auto;
+}
+
+#header-bar #header-info {
+    width: 1fr;
+    content-align: left middle;
+    height: auto;
+}
+
+#header-bar #header-shortcuts {
+    width: auto;
+    text-align: right;
+}
+
+/* --- StatusBar (#status-bar) --- */
+
+#status-bar {
+    dock: bottom;
+    height: 1;
+    background: #161b22;
+    color: #8b949e;
+    padding: 0 1;
+}
+
+#status-bar Horizontal {
+    height: 1;
+    width: 1fr;
+}
+
+#status-bar Static {
+    width: auto;
+}
+
+#status-bar #status-name {
+    color: #39c5cf;
+    text-style: bold;
+}
+
+#status-bar #status-duration {
+    color: #39c5cf;
+}
+
+#status-bar .status-sep {
+    color: #30363d;
+}
+
+#status-bar #status-mode {
+    color: #6e7681;
+}
+
+/* --- CommandBar (#command-bar) --- */
+
+#command-bar {
+    height: 1;
+    background: #161b22;
+    color: #e6edf3;
+    padding: 0 1;
+}
+
+#command-bar.hidden {
+    display: none;
+}
+
+#command-bar #command-bar-text {
+    width: 1fr;
+    height: 1;
+}
+
+/* --- ContentSwitcher --- */
+
+#content-switcher {
+    height: 1fr;
+    background: #0d1117;
+}
+
+/* --- ConnectionTable (id=list-view) --- */
+
+#list-view {
+    height: 1fr;
+    background: #0d1117;
+}
+
+#list-view DataTable {
+    height: 1fr;
+}
+
+DataTable {
+    background: #0d1117;
+    color: #e6edf3;
+    scrollbar-background: #161b22;
+    scrollbar-color: #30363d;
+    scrollbar-color-hover: #8b949e;
+    scrollbar-color-active: #39c5cf;
+}
+
+DataTable > .datatable--header {
+    background: #21262d;
+    color: #8b949e;
+    text-style: bold;
+}
+
+DataTable > .datatable--cursor {
+    background: #0d2a2d;
+    color: #e6edf3;
+    text-style: bold;
+}
+
+DataTable:blur > .datatable--cursor {
+    background: #0d2a2d;
+    color: #e6edf3;
+    text-style: bold;
+}
+
+DataTable > .datatable--hover {
+    background: #21262d;
+}
+
+DataTable > .datatable--even-row {
+    background: #0d1117;
+}
+
+DataTable > .datatable--odd-row {
+    background: #0d1117;
+}
+
+/* --- TerminalView (id=terminal-container) --- */
+
+#terminal-container {
+    height: 1fr;
+    background: #000000;
+}
+
+/* --- K8sResourceView (id=k8s-view) --- */
+
+#k8s-view {
+    height: 1fr;
+    background: #0d1117;
+}
+
+#k8s-header {
+    height: 1;
+    background: #161b22;
+    color: #e6edf3;
+    padding: 0 1;
+}
+
+#k8s-data-table {
+    height: 1fr;
+}
+
+#terminal-content {
+    width: 1fr;
+    height: 1fr;
+    background: #000000;
+    color: #e6edf3;
+    padding: 0 1;
+}
+
+/* --- Input --- */
+
+Input {
+    background: #0d1117;
+    border: solid #30363d;
+    color: #e6edf3;
+    padding: 0 1;
+}
+
+Input:focus {
+    border: solid #39c5cf;
+}
+
+Input.-invalid {
+    border: solid #f85149;
+}
+
+Input .input--placeholder {
+    color: #6e7681;
+}
+
+/* --- Select --- */
+
+Select {
+    background: #0d1117;
+    border: solid #30363d;
+    color: #e6edf3;
+}
+
+Select:focus {
+    border: solid #39c5cf;
+}
+
+Select > SelectCurrent {
+    background: #0d1117;
+    color: #e6edf3;
+}
+
+Select > SelectOverlay {
+    background: #161b22;
+    border: solid #30363d;
+}
+
+OptionList {
+    background: #161b22;
+    border: solid #30363d;
+    color: #e6edf3;
+    scrollbar-background: #161b22;
+    scrollbar-color: #30363d;
+}
+
+OptionList > .option-list--option-highlighted {
+    background: #0d2a2d;
+    color: #39c5cf;
+    text-style: bold;
+}
+
+OptionList > .option-list--option-hover {
+    background: #21262d;
+}
+
+/* --- Button --- */
+
+Button {
+    background: #21262d;
+    color: #e6edf3;
+    border: solid #30363d;
+    min-width: 12;
+    height: 3;
+}
+
+Button:hover {
+    background: #30363d;
+}
+
+Button:focus {
+    border: solid #58a6ff;
+}
+
+Button.-primary {
+    background: #0d2a2d;
+    color: #39c5cf;
+    border: solid #39c5cf;
+}
+
+Button.-primary:hover {
+    background: #163b3e;
+}
+
+Button.-error {
+    background: #301515;
+    color: #f85149;
+    border: solid #f85149;
+}
+
+Button.-error:hover {
+    background: #3b1c1c;
+}
+
+Button.-success {
+    background: #0d2a15;
+    color: #3fb950;
+    border: solid #3fb950;
+}
+
+Button.-warning {
+    background: #2d2209;
+    color: #d29922;
+    border: solid #d29922;
+}
+
+/* --- Label --- */
+
+Label {
+    color: #e6edf3;
+}
+
+/* --- Scrollbar --- */
+
+* {
+    scrollbar-background: #161b22;
+    scrollbar-color: #30363d;
+    scrollbar-color-hover: #8b949e;
+    scrollbar-color-active: #39c5cf;
+    scrollbar-size: 1 1;
+}
+
+/* --- Modal screens --- */
+
+AddConnectionScreen,
+DeleteConfirmScreen,
+HelpScreen,
+K8sPickerScreen {
+    align: center middle;
+}
+
+/* --- Utility --- */
+
+.hidden {
+    display: none;
+}
+
+.text-cyan {
+    color: #39c5cf;
+}
+
+.text-green {
+    color: #3fb950;
+}
+
+.text-red {
+    color: #f85149;
+}
+
+.text-muted {
+    color: #6e7681;
+}

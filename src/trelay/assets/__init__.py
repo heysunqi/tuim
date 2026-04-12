@@ -1,1 +1,0 @@
-"""Trelay assets package."""
