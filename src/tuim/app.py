@@ -616,6 +616,13 @@ class TuimApp(App):
             await self._k8s_safe_load(k8s_view, k8s_view.get_prev_resource_type())
             return
 
+        if resource_type == "customresourcedefinitions":
+            # Enter on a CRD → list its Custom Resources
+            crd_name = k8s_view.get_selected_resource_name()
+            if crd_name:
+                await self._k8s_safe_load(k8s_view, crd_name)
+            return
+
         if resource_type == "pods":
             # Enter on a pod → exec into it via terminal
             conn = self._k8s_connection

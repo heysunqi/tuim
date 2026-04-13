@@ -36,6 +36,9 @@ RESOURCE_ALIASES = {
     "hpa": "horizontalpodautoscalers", "horizontalpodautoscaler": "horizontalpodautoscalers", "horizontalpodautoscalers": "horizontalpodautoscalers",
     "limitrange": "limitranges", "limitranges": "limitranges",
     "pdb": "poddisruptionbudgets", "poddisruptionbudget": "poddisruptionbudgets", "poddisruptionbudgets": "poddisruptionbudgets",
+    # CRD
+    "crd": "customresourcedefinitions", "crds": "customresourcedefinitions",
+    "customresourcedefinition": "customresourcedefinitions", "customresourcedefinitions": "customresourcedefinitions",
 }
 
 # Column definitions per resource type
@@ -68,6 +71,8 @@ RESOURCE_COLUMNS = {
     "horizontalpodautoscalers": ["NAME", "REFERENCE", "TARGETS", "MINPODS", "MAXPODS", "REPLICAS", "AGE"],
     "limitranges": ["NAME", "AGE"],
     "poddisruptionbudgets": ["NAME", "MINAVAILABLE", "ALLOWEDDISRUPTIONS", "AGE"],
+    # CRD
+    "customresourcedefinitions": ["NAME", "GROUP", "VERSION", "SCOPE", "AGE"],
 }
 
 
@@ -625,6 +630,32 @@ def _parse_poddisruptionbudget(item):
     ]
 
 
+def _parse_crd(item):
+    # type: (dict) -> List[str]
+    """Parse a CustomResourceDefinition item."""
+    metadata = item.get("metadata", {})
+    spec = item.get("spec", {})
+    group = spec.get("group", "")
+    # Find the storage version
+    version = ""
+    for v in spec.get("versions", []):
+        if v.get("storage"):
+            version = v.get("name", "")
+            break
+    if not version:
+        versions = spec.get("versions", [])
+        if versions:
+            version = versions[0].get("name", "")
+    scope = spec.get("scope", "")
+    return [
+        metadata.get("name", ""),
+        group,
+        version,
+        scope,
+        _calc_age(metadata.get("creationTimestamp", "")),
+    ]
+
+
 _PARSERS = {
     # Existing
     "pods": _parse_pod,
@@ -654,6 +685,8 @@ _PARSERS = {
     "horizontalpodautoscalers": _parse_horizontalpodautoscaler,
     "limitranges": _parse_limitrange,
     "poddisruptionbudgets": _parse_poddisruptionbudget,
+    # CRD
+    "customresourcedefinitions": _parse_crd,
 }
 
 
@@ -703,12 +736,12 @@ class K8sService:
         Raises K8sConnectionError on kubectl failure or timeout.
         """
         canonical = RESOURCE_ALIASES.get(resource_type, resource_type)
-        headers = RESOURCE_COLUMNS.get(canonical, ["NAME"])
+        headers = RESOURCE_COLUMNS.get(canonical, ["NAME", "NAMESPACE", "AGE"])
         parser = _PARSERS.get(canonical)
 
         cmd = self._base_args()
         cmd.extend(["get", canonical])
-        if canonical != "namespaces":
+        if canonical not in ("namespaces", "customresourcedefinitions"):
             cmd.extend(["-n", self.namespace])
         cmd.extend(["-o", "json"])
 
@@ -733,8 +766,11 @@ class K8sService:
                 if parser:
                     rows.append(parser(item))
                 else:
-                    name = item.get("metadata", {}).get("name", "")
-                    rows.append([name])
+                    metadata = item.get("metadata", {})
+                    name = metadata.get("name", "")
+                    namespace = metadata.get("namespace", "")
+                    age = _calc_age(metadata.get("creationTimestamp", ""))
+                    rows.append([name, namespace, age])
             return headers, rows
 
         except asyncio.TimeoutError:

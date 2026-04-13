@@ -60,7 +60,8 @@ class K8sResourceView(Widget):
         # type: (str) -> None
         """Load resources of given type and refresh table."""
         canonical = RESOURCE_ALIASES.get(resource_type, resource_type)
-        if canonical == "namespaces" and self._current_resource_type != "namespaces":
+        if canonical in ("namespaces", "customresourcedefinitions") \
+                and self._current_resource_type not in ("namespaces", "customresourcedefinitions"):
             self._prev_resource_type = self._current_resource_type
         self._current_resource_type = canonical
         self._filter_text = ""
