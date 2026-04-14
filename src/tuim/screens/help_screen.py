@@ -11,12 +11,13 @@ from tuim.i18n import t
 SHORTCUTS = [
     ("Up / Down  or  k / j", "help_navigate"),
     ("Enter", "help_connect"),
-    ("Esc", "help_disconnect"),
     ("a", "help_add"),
     ("e", "help_edit"),
     ("d", "help_delete"),
-    ("?", "help_show_help"),
-    ("q", "help_quit"),
+    ("f", "help_file_transfer"),
+    ("/", "help_search"),
+    ("?", "help_help"),
+    (":q", "help_quit"),
 ]
 
 

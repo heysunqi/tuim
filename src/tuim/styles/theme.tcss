@@ -312,7 +312,10 @@ Label {
 AddConnectionScreen,
 DeleteConfirmScreen,
 HelpScreen,
-K8sPickerScreen {
+K8sPickerScreen,
+FileTransferScreen,
+TransferConfirmScreen,
+MkdirScreen {
     align: center middle;
 }
 

@@ -41,10 +41,19 @@ K8S_COMMANDS = [
         (":limitrange", "limitranges"),
     ]),
     ("Actions / \u64cd\u4f5c", [
-        ("?:", "k8s_help"),
+        (":?", "k8s_help"),
         (":ns <name>", "switch_namespace"),
         (":q", "back"),
         (":q!", "quit_force"),
+    ]),
+    ("Shortcuts / \u5feb\u6377\u952e", [
+        ("j / k", "k8s_key_nav"),
+        ("Enter", "k8s_key_enter"),
+        ("d", "k8s_key_describe"),
+        ("e", "k8s_key_edit"),
+        ("l", "k8s_key_logs"),
+        ("r", "k8s_key_refresh"),
+        ("/", "k8s_key_search"),
     ]),
 ]
 

@@ -314,6 +314,12 @@ class TuimApp(App):
             event.stop()
             cmd_bar.activate(char)
             return
+        if char == "?":
+            event.prevent_default()
+            event.stop()
+            from tuim.screens.k8s_help_screen import K8sHelpScreen
+            self.push_screen(K8sHelpScreen())
+            return
         if char in ("j", "k") or key in ("up", "down"):
             event.prevent_default()
             event.stop()
@@ -355,10 +361,16 @@ class TuimApp(App):
             return
         key = event.key
         char = event.character
-        if char in (":", "/", "?"):
+        if char in (":", "/"):
             event.prevent_default()
             event.stop()
             cmd_bar.activate(char)
+            return
+        if char == "?":
+            event.prevent_default()
+            event.stop()
+            from tuim.screens.help_screen import HelpScreen
+            self.push_screen(HelpScreen())
             return
         if char in ("j", "k") or key in ("up", "down"):
             event.prevent_default()
@@ -372,6 +384,11 @@ class TuimApp(App):
                     dt.action_cursor_up()
             except Exception:
                 pass
+            return
+        if char == "f":
+            event.prevent_default()
+            event.stop()
+            self.run_worker(self._open_file_transfer(), exclusive=False)
             return
 
     # ---- Actions ----
@@ -505,6 +522,22 @@ class TuimApp(App):
         terminal.write_line("\n" + t("disconnecting"))
         await self.session_manager.disconnect()
         self._return_to_list()
+
+    async def _open_file_transfer(self):
+        # type: () -> None
+        """Open the SFTP file transfer screen for the selected SSH connection."""
+        from tuim.models import Protocol
+        from tuim.screens.file_transfer_screen import FileTransferScreen
+
+        table = self.query_one(ConnectionTable)
+        name = table.get_selected_connection_name()
+        if not name:
+            return
+        conn = self._find_connection(name)
+        if not conn or conn.protocol != Protocol.SSH:
+            self.notify(t("sftp_ssh_only"), severity="warning")
+            return
+        self.push_screen(FileTransferScreen(conn))
 
     def _return_to_list(self):
         # type: () -> None
@@ -1019,7 +1052,7 @@ class TuimApp(App):
         # type: () -> None
         """r key: refresh K8s resource list."""
         k8s_view = self.query_one(K8sResourceView)
-        k8s_view.reload_resources()
+        await k8s_view.reload_resources()
 
     # ---- Table events ----
 

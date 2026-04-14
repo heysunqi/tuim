@@ -64,13 +64,13 @@ class HeaderBar(Widget):
     """Top header bar with logo and keyboard shortcut hints."""
 
     _LIST_ROWS = [
-        [("↑↓", "nav"), ("Enter", "connect"), ("Ctrl+D", "disconnect_btn"), ("a", "add")],
-        [("e", "edit"), ("d", "delete_btn"), ("/", "search"), (":q", "quit")],
+        [("↑↓", "nav"), ("Enter", "connect"), ("a", "add"), ("e", "edit")],
+        [("d", "delete_btn"), ("f", "sftp_shortcuts"), ("/", "search"), ("?", "help_help"), (":q", "quit")],
     ]
 
     _K8S_ROWS = [
         [("j/k", "nav"), ("Enter", "exec"), (":pod", "pods"), ("r", "refresh")],
-        [("d", "describe"), ("e", "k8s_edit"), ("l", "logs"), (":q", "back")],
+        [("d", "describe"), ("e", "k8s_edit"), ("l", "logs"), ("/", "search"), ("?", "k8s_help"), (":q", "back")],
     ]
 
     def __init__(self, **kwargs):
