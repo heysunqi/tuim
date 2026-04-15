@@ -19,8 +19,9 @@ jobs:
             runner: ubuntu-24.04-arm
             artifact: linux-arm64
           - name: darwin-amd64
-            runner: macos-13
+            runner: macos-15
             artifact: darwin-amd64
+            python_arch: x64
           - name: darwin-arm64
             runner: macos-14
             artifact: darwin-arm64
@@ -35,6 +36,7 @@ jobs:
         with:
           python-version: "3.14"
           allow-prereleases: true
+          architecture: ${{ matrix.python_arch || '' }}
 
       - name: Install dependencies
         run: |
