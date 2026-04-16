@@ -258,6 +258,12 @@ class TuimApp(App):
         elif self._current_view == "list":
             self._handle_key_list(event)
 
+    async def on_paste(self, event):
+        """Forward pasted text to the remote session in terminal mode."""
+        if self._current_view == "terminal" and self.session_manager.is_connected:
+            event.stop()
+            await self.session_manager.send_input(event.text)
+
     async def _handle_key_terminal(self, event):
         """Terminal mode: forward all keystrokes to the remote session."""
         if self._shell_retry_pending:
