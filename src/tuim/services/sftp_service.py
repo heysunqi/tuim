@@ -108,6 +108,7 @@ class SFTPService:
     def __init__(self, connection):
         # type: (Connection) -> None
         self._connection = connection
+        self._jump_conn = None  # type: Optional[asyncssh.SSHClientConnection]
         self._ssh_conn = None  # type: Optional[asyncssh.SSHClientConnection]
         self._sftp = None  # type: Optional[asyncssh.SFTPClient]
 
@@ -132,6 +133,22 @@ class SFTPService:
             if cfg.password:
                 connect_kwargs["password"] = cfg.password
 
+        # If jump host is configured, establish tunnel first
+        if cfg is not None and cfg.jump_host:
+            jump_kwargs = {
+                "host": cfg.jump_host,
+                "port": cfg.jump_port,
+                "known_hosts": None,
+            }
+            if cfg.jump_username:
+                jump_kwargs["username"] = cfg.jump_username
+            if cfg.jump_private_key_path:
+                jump_kwargs["client_keys"] = [cfg.jump_private_key_path]
+            if cfg.jump_password:
+                jump_kwargs["password"] = cfg.jump_password
+            self._jump_conn = await asyncssh.connect(**jump_kwargs)
+            connect_kwargs["tunnel"] = self._jump_conn
+
         self._ssh_conn = await asyncssh.connect(**connect_kwargs)
         self._sftp = await self._ssh_conn.start_sftp_client()
 
@@ -148,6 +165,13 @@ class SFTPService:
             except Exception:
                 pass
             self._ssh_conn = None
+        if self._jump_conn is not None:
+            self._jump_conn.close()
+            try:
+                await self._jump_conn.wait_closed()
+            except Exception:
+                pass
+            self._jump_conn = None
 
     async def get_home_dir(self):
         # type: () -> str

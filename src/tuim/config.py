@@ -68,6 +68,11 @@ def _parse_connection(data):
             username=s.get("username", ""),
             password=s.get("password", ""),
             private_key_path=s.get("private_key_path", ""),
+            jump_host=s.get("jump_host", ""),
+            jump_port=s.get("jump_port", 22),
+            jump_username=s.get("jump_username", ""),
+            jump_password=s.get("jump_password", ""),
+            jump_private_key_path=s.get("jump_private_key_path", ""),
         )
 
     if protocol == Protocol.RDP and "rdp" in data:
@@ -140,6 +145,16 @@ def _serialize_connection(conn):
             cfg["password"] = conn.ssh_config.password
         if conn.ssh_config.private_key_path:
             cfg["private_key_path"] = conn.ssh_config.private_key_path
+        if conn.ssh_config.jump_host:
+            cfg["jump_host"] = conn.ssh_config.jump_host
+        if conn.ssh_config.jump_port and conn.ssh_config.jump_port != 22:
+            cfg["jump_port"] = conn.ssh_config.jump_port
+        if conn.ssh_config.jump_username:
+            cfg["jump_username"] = conn.ssh_config.jump_username
+        if conn.ssh_config.jump_password:
+            cfg["jump_password"] = conn.ssh_config.jump_password
+        if conn.ssh_config.jump_private_key_path:
+            cfg["jump_private_key_path"] = conn.ssh_config.jump_private_key_path
         if cfg:
             data["ssh"] = cfg
 

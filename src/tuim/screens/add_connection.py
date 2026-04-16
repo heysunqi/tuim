@@ -190,6 +190,41 @@ class AddConnectionScreen(ModalScreen[Optional[Connection]]):
                             placeholder="~/.ssh/id_rsa",
                             id="field-ssh-key",
                         )
+                    with Vertical(classes="form-group"):
+                        yield Label(t("label_jump_host"))
+                        yield Input(
+                            value=self._get_ssh_val("jump_host"),
+                            placeholder=t("placeholder_jump_host"),
+                            id="field-ssh-jump-host",
+                        )
+                    with Vertical(classes="form-group"):
+                        yield Label(t("label_jump_port"))
+                        yield Input(
+                            value=self._get_ssh_jump_port(),
+                            placeholder="22",
+                            id="field-ssh-jump-port",
+                        )
+                    with Vertical(classes="form-group"):
+                        yield Label(t("label_jump_username"))
+                        yield Input(
+                            value=self._get_ssh_val("jump_username"),
+                            placeholder=t("label_jump_username"),
+                            id="field-ssh-jump-username",
+                        )
+                    with Vertical(classes="form-group"):
+                        yield Label(t("label_jump_password"))
+                        yield Input(
+                            value=self._get_ssh_val("jump_password"),
+                            password=True,
+                            id="field-ssh-jump-password",
+                        )
+                    with Vertical(classes="form-group"):
+                        yield Label(t("label_jump_private_key"))
+                        yield Input(
+                            value=self._get_ssh_val("jump_private_key_path"),
+                            placeholder="~/.ssh/id_rsa",
+                            id="field-ssh-jump-key",
+                        )
 
                 # --- RDP fields ---
                 with Vertical(id="rdp-fields", classes="protocol-fields hidden"):
@@ -327,6 +362,13 @@ class AddConnectionScreen(ModalScreen[Optional[Connection]]):
         if conn and conn.ssh_config:
             return getattr(conn.ssh_config, attr, default) or default
         return default
+
+    def _get_ssh_jump_port(self):
+        # type: () -> str
+        conn = self.editing_connection
+        if conn and conn.ssh_config and conn.ssh_config.jump_host:
+            return str(conn.ssh_config.jump_port)
+        return ""
 
     def _get_rdp_val(self, attr, default=""):
         # type: (str, str) -> str
@@ -489,6 +531,11 @@ class AddConnectionScreen(ModalScreen[Optional[Connection]]):
                 username=self.query_one("#field-ssh-username", Input).value.strip(),
                 password=self.query_one("#field-ssh-password", Input).value,
                 private_key_path=self.query_one("#field-ssh-key", Input).value.strip(),
+                jump_host=self.query_one("#field-ssh-jump-host", Input).value.strip(),
+                jump_port=int(self.query_one("#field-ssh-jump-port", Input).value.strip() or "22"),
+                jump_username=self.query_one("#field-ssh-jump-username", Input).value.strip(),
+                jump_password=self.query_one("#field-ssh-jump-password", Input).value,
+                jump_private_key_path=self.query_one("#field-ssh-jump-key", Input).value.strip(),
             )
         elif protocol == Protocol.RDP:
             rdp_config = RDPConfig(

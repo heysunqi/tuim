@@ -265,6 +265,14 @@ _ZH = {
     "sftp_mkdir_placeholder": "请输入文件夹名称",
     "sftp_mkdir_done": "已创建文件夹: {name}",
     "sftp_mkdir_failed": "创建文件夹失败: {error}",
+    # -- ssh jump host --
+    "label_jump_host": "跳板机地址",
+    "placeholder_jump_host": "跳板机地址（可选）",
+    "label_jump_port": "跳板机端口",
+    "label_jump_username": "跳板机用户名",
+    "label_jump_password": "跳板机密码",
+    "label_jump_private_key": "跳板机私钥路径",
+    "ssh_jump_connecting": "正在通过跳板机 {jump} 连接...",
 }
 
 _EN = {
@@ -512,6 +520,14 @@ _EN = {
     "sftp_mkdir_placeholder": "Enter folder name",
     "sftp_mkdir_done": "Folder created: {name}",
     "sftp_mkdir_failed": "Failed to create folder: {error}",
+    # -- ssh jump host --
+    "label_jump_host": "Jump Host",
+    "placeholder_jump_host": "Jump host (optional)",
+    "label_jump_port": "Jump Port",
+    "label_jump_username": "Jump Username",
+    "label_jump_password": "Jump Password",
+    "label_jump_private_key": "Jump Private Key",
+    "ssh_jump_connecting": "Connecting via jump host {jump}...",
 }
 
 _TRANSLATIONS = {"zh": _ZH, "en": _EN}

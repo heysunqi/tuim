@@ -115,3 +115,58 @@ def test_save_and_load_k8s_token_roundtrip():
     finally:
         if os.path.exists(path):
             os.unlink(path)
+
+
+def test_save_and_load_ssh_jump_roundtrip():
+    """SSH connection with jump host should survive save/load round-trip."""
+    with tempfile.NamedTemporaryFile(suffix=".yaml", delete=False, mode="w") as f:
+        path = f.name
+
+    try:
+        connections = [
+            Connection(
+                name="jump-test",
+                host="10.0.0.50",
+                protocol=Protocol.SSH,
+                port=22,
+                description="Via jump host",
+                ssh_config=SSHConfig(
+                    username="admin",
+                    private_key_path="~/.ssh/id_rsa",
+                    jump_host="bastion.example.com",
+                    jump_port=2222,
+                    jump_username="jumper",
+                    jump_password="jumppass",
+                    jump_private_key_path="~/.ssh/jump_key",
+                ),
+            ),
+        ]
+
+        save_connections(connections, config_path=path)
+
+        # Verify raw YAML
+        with open(path, "r") as f:
+            raw = yaml.safe_load(f)
+        ssh_data = raw["connections"][0]["ssh"]
+        assert ssh_data["jump_host"] == "bastion.example.com"
+        assert ssh_data["jump_port"] == 2222
+        assert ssh_data["jump_username"] == "jumper"
+        assert ssh_data["jump_password"] == "jumppass"
+        assert ssh_data["jump_private_key_path"] == "~/.ssh/jump_key"
+
+        # Load back
+        loaded_conns, _ = load_connections(path)
+        assert len(loaded_conns) == 1
+        conn = loaded_conns[0]
+        assert conn.name == "jump-test"
+        assert conn.ssh_config is not None
+        assert conn.ssh_config.jump_host == "bastion.example.com"
+        assert conn.ssh_config.jump_port == 2222
+        assert conn.ssh_config.jump_username == "jumper"
+        assert conn.ssh_config.jump_password == "jumppass"
+        assert conn.ssh_config.jump_private_key_path == "~/.ssh/jump_key"
+        assert conn.ssh_config.username == "admin"
+        assert conn.ssh_config.private_key_path == "~/.ssh/id_rsa"
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)

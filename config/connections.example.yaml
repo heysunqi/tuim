@@ -72,3 +72,15 @@ connections:
       context: prod-cluster
       namespace: default
       command: /bin/sh
+
+  - name: internal-server
+    host: 10.0.0.50
+    protocol: ssh
+    port: 22
+    description: "Internal Server via Jump Host"
+    ssh:
+      username: admin
+      private_key_path: ~/.ssh/id_rsa
+      jump_host: bastion.example.com
+      jump_username: jumper
+      jump_private_key_path: ~/.ssh/jump_key

@@ -53,6 +53,11 @@ class SSHConfig:
     username: str = ""
     password: str = ""
     private_key_path: str = ""
+    jump_host: str = ""
+    jump_port: int = 22
+    jump_username: str = ""
+    jump_password: str = ""
+    jump_private_key_path: str = ""
 
 
 @dataclass

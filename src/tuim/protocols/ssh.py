@@ -17,6 +17,7 @@ class SSHHandler(ProtocolHandler):
 
     def __init__(self, connection: Connection) -> None:
         super().__init__(connection)
+        self._jump_conn = None  # type: Optional[asyncssh.SSHClientConnection]
         self._conn = None  # type: Optional[asyncssh.SSHClientConnection]
         self._process = None  # type: Optional[asyncssh.SSHClientProcess]
         self._reader_task = None  # type: Optional[asyncio.Task]
@@ -51,6 +52,25 @@ class SSHHandler(ProtocolHandler):
                 connect_kwargs["password"] = cfg.password
 
         try:
+            # If jump host is configured, establish tunnel first
+            if cfg is not None and cfg.jump_host:
+                jump_kwargs = {
+                    "host": cfg.jump_host,
+                    "port": cfg.jump_port,
+                    "known_hosts": None,
+                }
+                if cfg.jump_username:
+                    jump_kwargs["username"] = cfg.jump_username
+                if cfg.jump_private_key_path:
+                    jump_kwargs["client_keys"] = [cfg.jump_private_key_path]
+                if cfg.jump_password:
+                    jump_kwargs["password"] = cfg.jump_password
+                self._emit_output(
+                    t("ssh_jump_connecting", jump=cfg.jump_host) + "\r\n"
+                )
+                self._jump_conn = await asyncssh.connect(**jump_kwargs)
+                connect_kwargs["tunnel"] = self._jump_conn
+
             self._conn = await asyncssh.connect(**connect_kwargs)
             self._process = await self._conn.create_process(
                 term_type="xterm-256color",
@@ -119,6 +139,14 @@ class SSHHandler(ProtocolHandler):
                 pass
             self._conn = None
 
+        if self._jump_conn is not None:
+            try:
+                self._jump_conn.close()
+                await self._jump_conn.wait_closed()
+            except Exception:
+                pass
+            self._jump_conn = None
+
         self.is_connected = False
 
     async def send_input(self, data: str) -> None:
@@ -129,8 +157,13 @@ class SSHHandler(ProtocolHandler):
                 logger.error("Failed to send SSH input: %s", exc)
 
     async def check_health(self) -> ConnectionStatus:
-        host = self.connection.host
-        port = self.connection.port
+        cfg = self.connection.ssh_config
+        if cfg and cfg.jump_host:
+            host = cfg.jump_host
+            port = cfg.jump_port
+        else:
+            host = self.connection.host
+            port = self.connection.port
         try:
             _, writer = await asyncio.wait_for(
                 asyncio.open_connection(host, port),
